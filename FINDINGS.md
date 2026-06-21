@@ -35,7 +35,7 @@ uses `prev` directly and never calls `record_history`.
 Filed upstream: **InauguralSystems/EigenScript#255**. (Lesson: verify the call
 before blaming the runtime — a divergence is neutral.)
 
-## F-DYN-2 — windowed predicates are sampling-rate sensitive (doc/semantics gap)
+## F-DYN-2 — windowed predicates are sampling-rate sensitive (doc/semantics gap) → upstream EigenScript#256
 
 Entropy of a number is `H(1/(1+|x|))` and the predicates fire on dH against
 `dh_small=0.01` / `dh_zero=0.001`. If you observe a smoothly-evolving quantity
@@ -59,7 +59,7 @@ argument is a literal list or a variable. Cost a real bug here (a two-param
 `energy_of(x, v)` silently got `v = null`). Known calling-convention behavior, but
 a sharp edge worth a line in the docs.
 
-## F-DYN-6 — predicate-driven convergence loops need "settled" + debounce, not bare `converged`
+## F-DYN-6 — predicate-driven convergence loops need "settled" + debounce, not bare `converged` → upstream EigenScript#256
 
 The idiomatic `loop while not converged` (stop the instant `report` says
 `converged`) is insufficient for two common, legitimate convergence shapes:

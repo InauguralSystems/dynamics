@@ -54,8 +54,12 @@ forcing functions), each exercising a different observer sub-surface:
   full predicate space, and the ζ=0 row shows the founding-question lesson —
   energy conserved (never converges) while x oscillates, opposite verdicts set by
   what the observer watches. Run: `eigenscript physics.eigs`.
-- **life** (Conway) — *planned;* the temporal showcase; `prev`/`at` for
-  period/oscillator detection where scalar predicates alone are fooled.
+- **life** (`life.eigs`) — **built.** Conway's Game of Life: the temporal
+  showcase. A blinker, a block, and a glider all have constant population, so
+  `report of population` calls all three the same — only comparing the board to its
+  own past (a position-sensitive signature + `prev`) reveals period-2 oscillator
+  vs. still life vs. translating. The temporal observer doing what the scalar
+  predicate cannot. Run: `eigenscript life.eigs`.
 - **solve** (Jacobi / Gauss-Seidel / SOR / power iteration / PageRank) —
   *planned;* the canonical `loop while not converged` control-flow idiom.
 

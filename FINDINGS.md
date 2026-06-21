@@ -59,6 +59,14 @@ argument is a literal list or a variable. Cost a real bug here (a two-param
 `energy_of(x, v)` silently got `v = null`). Known calling-convention behavior, but
 a sharp edge worth a line in the docs.
 
+## F-DYN-5 — f-strings interpolate `name` / `name[i]` but not call expressions
+
+`f"...{rr[0]}..."` works (variable, and variable-index), but
+`f"...{(analyze of [...])[0]}..."` is emitted **literally** — an `f`-string
+placeholder containing a function call (or parenthesized expression) is not
+evaluated. Workaround: bind the expression to a variable first, then interpolate
+`{var}`. Minor; a doc note or a parser extension would help.
+
 ## F-DYN-4 — `--lint` false-positive "unused parameter" (minor lint bug)
 
 `--lint` reports `unused parameter 'zeta'` for `profile`/`frame_velocity`, yet the

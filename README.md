@@ -60,8 +60,11 @@ forcing functions), each exercising a different observer sub-surface:
   own past (a position-sensitive signature + `prev`) reveals period-2 oscillator
   vs. still life vs. translating. The temporal observer doing what the scalar
   predicate cannot. Run: `eigenscript life.eigs`.
-- **solve** (Jacobi / Gauss-Seidel / SOR / power iteration / PageRank) —
-  *planned;* the canonical `loop while not converged` control-flow idiom.
+- **solve** (`solve.eigs`) — **built.** Jacobi / Gauss-Seidel / power iteration /
+  PageRank: the loop-idiom showcase. Every loop runs until `report of change` is
+  settled (and holds) — the observer, not a magnitude tolerance, decides "done".
+  Gauss-Seidel converges in fewer iterations than Jacobi under the *same* idiom;
+  PageRank's oscillatory residual needs the debounce. Run: `eigenscript solve.eigs`.
 
 Forcing-function findings (runtime gaps surfaced while building) are logged in
 [FINDINGS.md](FINDINGS.md) — currently a `record_history`/`prev` interaction bug,

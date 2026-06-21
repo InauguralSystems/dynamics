@@ -59,6 +59,27 @@ argument is a literal list or a variable. Cost a real bug here (a two-param
 `energy_of(x, v)` silently got `v = null`). Known calling-convention behavior, but
 a sharp edge worth a line in the docs.
 
+## F-DYN-6 — predicate-driven convergence loops need "settled" + debounce, not bare `converged`
+
+The idiomatic `loop while not converged` (stop the instant `report` says
+`converged`) is insufficient for two common, legitimate convergence shapes:
+
+- **Fast monotone** (Gauss-Seidel): the residual falls so steeply it lands in
+  `equilibrium` (dH stopped) without the observer ever passing through
+  `converged`. A `converged`-only loop runs to the iteration cap despite being
+  solved by iter ~8.
+- **Oscillatory** (PageRank power iteration toward a stationary point): the
+  residual swings, so a *single* `equilibrium`/`converged` reading appears
+  mid-swing and a naive "stop when settled" quits early with the wrong answer.
+
+A robust predicate-driven solver loop therefore needs **(a)** treat
+`converged` OR `equilibrium` as "settled", and **(b)** debounce — require the
+settled reading to HOLD for several consecutive iterations (`solve.eigs` uses
+`HOLD = 3`). Transient blips reset the count; real convergence holds. This is a
+useful pattern but it isn't obvious from `docs/PREDICATES.md`, which presents
+`loop while not converged` as the canonical form — worth a doc note that fast and
+oscillatory residuals need the settled+hold variant.
+
 ## F-DYN-5 — f-strings interpolate `name` / `name[i]` but not call expressions
 
 `f"...{rr[0]}..."` works (variable, and variable-index), but

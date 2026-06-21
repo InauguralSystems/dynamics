@@ -1,0 +1,6 @@
+{
+  "name": "dynamics",
+  "version": "0.1.0",
+  "description": "Observer-rich dynamical-systems lab in EigenScript — equilibrium-seeking systems that exercise the convergence/stability predicates and temporal history authentically.",
+  "deps": {}
+}

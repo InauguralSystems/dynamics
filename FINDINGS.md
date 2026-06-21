@@ -9,28 +9,31 @@ neutral signal — verify before blaming the runtime).
 
 ---
 
-## F-DYN-1 — `record_history` breaks temporal `prev` (runtime bug)
+## F-DYN-1 — `record_history` silently disables on a non-numeric flag → upstream EigenScript #255
 
-Calling `record_history of null` causes a subsequently-observed variable's
-`prev of x` to return `null` instead of its previous value. `prev` works
-correctly when `record_history` is never called.
+`record_history of <flag>` is a flag setter: nonzero enables per-assignment
+history, `0` disables it. It treats **any non-numeric arg as `0` (disable)** — so
+`record_history of null` (or a string) silently turns history *off*, and a later
+`prev of x` returns `null` with no error.
 
 ```eigenscript
-a is 10.0
-a is 7.0
-print of (prev of a)        # 10  (correct)
-
-record_history of null
-b is 10.0
-b is 7.0
-print of (prev of b)        # null  (BROKEN)
+record_history of 1     ; a is 10.0 ; a is 7.0 ; print of (prev of a)   # 10   (works)
+record_history of 0     ; b is 10.0 ; b is 7.0 ; print of (prev of b)   # null (disabled)
+record_history of null  ; c is 10.0 ; c is 7.0 ; print of (prev of c)   # null (SILENT disable)
 ```
 
-Impact: the temporal-history surface (`prev`, and the interrogatives' deeper
-"when/where" forms that rely on recorded history) can't be combined with
-`record_history` in one program. The physics module therefore uses `prev`
-directly and does **not** call `record_history`. Candidate for an upstream issue;
-relates to the history flags `record_history` was added to set (EigenScript #253).
+Originally mis-recorded here as "record_history breaks prev" — it was a wrong
+*call* (`null` instead of `1`). The real, fileable bug is the silent
+non-numeric→disable coercion (`builtin_record_history`, `src/builtins.c:3451`),
+which masks a likely caller error; it should raise instead (cf. the strict-error
+direction of #245/#246). Note `prev` does **not** need `record_history` at all in
+normal programs — the C compiler auto-enables history when it compiles a temporal
+query (`src/compiler.c:1077`/`1818`); calling `record_history of null` *overrides*
+that auto-enable, which is what produced the surprising `null`. The physics module
+uses `prev` directly and never calls `record_history`.
+
+Filed upstream: **InauguralSystems/EigenScript#255**. (Lesson: verify the call
+before blaming the runtime — a divergence is neutral.)
 
 ## F-DYN-2 — windowed predicates are sampling-rate sensitive (doc/semantics gap)
 

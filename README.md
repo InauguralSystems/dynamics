@@ -44,18 +44,24 @@ dynamics.last_delta of 0.5            # final pre-convergence step, read via tem
 dynamics.VERSION
 ```
 
-This 0.1.0 is the equilibrium-relaxation primitive. Planned modules, each chosen
-to exercise a different observer sub-surface:
+`dynamics.eigs` is the importable package facade (the 0.1.0 relaxation primitive).
+The lab itself is a set of standalone runnable programs (corpus specimens +
+forcing functions), each exercising a different observer sub-surface:
 
-- **physics** (ζ-sweep damped oscillator, n-body settling, diffusion relaxation) —
-  the predicate showcase; all six predicates on continuous trajectories. The
-  damping ratio sweeps the full predicate space, and observing energy vs.
-  displacement gives opposite verdicts on the same system — the founding-question
-  lesson that the observer constitutes the measurement.
-- **life** (Conway) — the temporal showcase; `prev`/`at` for period/oscillator
-  detection where scalar predicates alone are fooled.
-- **solve** (Jacobi / Gauss-Seidel / SOR / power iteration / PageRank) — the
-  canonical `loop while not converged` control-flow idiom.
+- **physics** (`physics.eigs`) — **built.** The damped-oscillator ζ-sweep: the
+  predicate showcase. Observes energy (Lyapunov → `improving`/`converged`) and
+  displacement (`oscillating`) of the *same* system; the damping ratio sweeps the
+  full predicate space, and the ζ=0 row shows the founding-question lesson —
+  energy conserved (never converges) while x oscillates, opposite verdicts set by
+  what the observer watches. Run: `eigenscript physics.eigs`.
+- **life** (Conway) — *planned;* the temporal showcase; `prev`/`at` for
+  period/oscillator detection where scalar predicates alone are fooled.
+- **solve** (Jacobi / Gauss-Seidel / SOR / power iteration / PageRank) —
+  *planned;* the canonical `loop while not converged` control-flow idiom.
+
+Forcing-function findings (runtime gaps surfaced while building) are logged in
+[FINDINGS.md](FINDINGS.md) — currently a `record_history`/`prev` interaction bug,
+the predicates' sampling-rate sensitivity, and a calling-convention edge.
 
 ## Develop locally
 

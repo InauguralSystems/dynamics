@@ -49,6 +49,11 @@ per-observation dH is large enough to be legible. This sampling/threshold coupli
 is not documented in `docs/PREDICATES.md` and is easy to trip over — a real
 consumer of the predicates needs to know it. Candidate doc finding upstream.
 
+**Resolved upstream — EigenScript#259** (ready for review): documented in the new
+`docs/PREDICATES.md` "Convergence loops in practice" section (the observation-cadence
+note + the entropy-peak-at-`|x|=1`/`diverging` consequence). See F-DYN-6 below — both
+findings landed in the same doc PR.
+
 ## F-DYN-3 — `f of <listvar>` does not spread; only a literal `[...]` does
 
 `energy_of of state` (where `state` is a variable holding `[x, v]`) passes the
@@ -79,6 +84,16 @@ settled reading to HOLD for several consecutive iterations (`solve.eigs` uses
 useful pattern but it isn't obvious from `docs/PREDICATES.md`, which presents
 `loop while not converged` as the canonical form — worth a doc note that fast and
 oscillatory residuals need the settled+hold variant.
+
+**Resolved upstream — EigenScript#259** (ready for review): `docs/PREDICATES.md`
+gained a "Convergence loops in practice" section built from `solve.eigs`'s real
+Gauss-Seidel and PageRank traces, the settled-plus-`HOLD` recipe, plus the
+sampling-cadence (F-DYN-2) and entropy-peak-at-`|x|=1` notes. One correction came
+out of writing it: the Gauss-Seidel residual was confirmed to read `equilibrium`
+*permanently* and never `converged` — even held at `change == 0` to iter 25 — so
+"never passes through `converged`" above is exactly right; a synthetic `r*0.1` toy
+that *did* reach `converged` was the misleading case, and the real solver trace
+(the oracle) settled it.
 
 ## F-DYN-5 — f-strings interpolate `name` / `name[i]` but not call expressions
 

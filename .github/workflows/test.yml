@@ -6,20 +6,23 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: read
+
 jobs:
   test:
+    name: suite (in devcontainer)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Build EigenScript from source
-        run: |
-          git clone --depth 1 https://github.com/InauguralSystems/EigenScript.git "$RUNNER_TEMP/eigs"
-          make -C "$RUNNER_TEMP/eigs" -s
-          echo "EIGENSCRIPT=$RUNNER_TEMP/eigs/src/eigenscript" >> "$GITHUB_ENV"
-
-      - name: Run smoke tests
-        run: bash tests/test_smoke.sh
-
-      - name: Run lab programs
-        run: bash tests/test_lab.sh
+      # Build the devcontainer (EigenScript pinned by .devcontainer/Dockerfile's
+      # EIGS_REF) and run the suite inside it — the same image a Codespace opens.
+      # EIGENSCRIPT=eigenscript points the scripts at the on-PATH runtime.
+      # (Replaces the old clone-HEAD-and-build step, which pinned nothing.)
+      - name: Build devcontainer and run suite
+        uses: devcontainers/ci@v0.3
+        with:
+          runCmd: |
+            EIGENSCRIPT=eigenscript bash tests/test_smoke.sh
+            EIGENSCRIPT=eigenscript bash tests/test_lab.sh

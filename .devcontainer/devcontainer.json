@@ -1,0 +1,17 @@
+{
+  "name": "dynamics",
+  "build": { "dockerfile": "Dockerfile" },
+  "workspaceFolder": "/workspaces/dynamics",
+  "remoteUser": "root",
+
+  // The suite addresses the runtime via $EIGENSCRIPT; export it to the
+  // installed binary so test scripts work out of the box in a Codespace.
+  "postCreateCommand": "eigenscript --version",
+  "remoteEnv": { "EIGENSCRIPT": "eigenscript" },
+
+  "customizations": {
+    "vscode": {
+      "settings": { "files.associations": { "*.eigs": "python" } }
+    }
+  }
+}

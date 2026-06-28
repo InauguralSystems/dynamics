@@ -30,11 +30,14 @@ define relax(target, rate, start) as:
     return x
 
 # How many steps a geometric decay at `rate` takes to converge from 100 —
-# the observer decides "converged", not a fixed tolerance constant.
+# the observer decides "converged", not a fixed tolerance constant. The body
+# assigns the counter `k` after `x`, so `x` is NOT the last-observed binding;
+# the predicate is named explicitly (`converged of x`) so it reads x, not k.
+# (A bare `converged` here read k and returned the same count for every rate.)
 define settle_steps(rate) as:
     x is 100.0
     k is 0
-    loop while not converged:
+    loop while not (converged of x):
         x is x * rate
         k is k + 1
     return k

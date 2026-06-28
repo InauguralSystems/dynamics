@@ -112,6 +112,28 @@ use-analysis appears not to descend into those, producing a false positive.
 
 ---
 
+## F-DYN-7 — bare `converged` in `settle_steps` read the counter, not the value → fixed upstream EigenScript#280 (v0.20.0)
+
+`settle_steps(rate)` ran `loop while not converged:` over a body that assigns the
+decaying `x` **then** a counter `k is k + 1`. A bare predicate reads the
+*last-observed* binding, and every assignment is observed, so the predicate read
+`k` — whose entropy `H(1/(1+k))` flattens at a fixed step independent of `rate`.
+The loop therefore halted on the counter: `settle_steps` returned the same count
+(~88) for every rate, while `x` was nowhere near settled (at rate 0.99, x had
+only decayed 100 → 41.3). `relax`/`last_delta` were unaffected — their loop
+bodies assign only `x`, so the bare predicate unambiguously reads it (the comment
+at `relax` states this invariant; `settle_steps` violated it).
+
+Upstream fix (EigenScript#280, v0.20.0): a **named** predicate form
+`<predicate> of <var>` that binds to a specific binding's slot trajectory, plus
+lint `W014` for a bare predicate in a multi-observe loop condition. `settle_steps`
+now uses `loop while not (converged of x)` — it reads x's slot each iteration and
+is rate-dependent (e.g. 30 / 120 / 10 steps at 0.5 / 0.9 / 0.99). `EIGS_REF`
+bumped to v0.20.0. Prefer the named form whenever a convergence loop assigns more
+than one binding.
+
+---
+
 ## Non-findings (verified working — recorded to avoid re-investigating)
 
 - **Interrogatives work** as expressions: `print of (what is energy)`,

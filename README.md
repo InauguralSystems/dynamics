@@ -1,5 +1,10 @@
 # dynamics
 
+[![CI](https://github.com/InauguralSystems/dynamics/actions/workflows/test.yml/badge.svg)](https://github.com/InauguralSystems/dynamics/actions/workflows/test.yml)
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/InauguralSystems/dynamics/badge)](https://securityscorecards.dev/viewer/?uri=github.com/InauguralSystems/dynamics)
+[![tag](https://img.shields.io/github/v/tag/InauguralSystems/dynamics?label=version)](https://github.com/InauguralSystems/dynamics/tags)
+[![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
 An **observer-rich dynamical-systems lab** in [EigenScript](https://github.com/InauguralSystems/EigenScript).
 
 Most EigenScript code is observer-*sparse*: the convergence/stability/oscillation

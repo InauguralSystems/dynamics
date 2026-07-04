@@ -9,7 +9,7 @@ neutral signal — verify before blaming the runtime).
 
 ---
 
-## F-DYN-1 — `record_history` silently disables on a non-numeric flag → upstream EigenScript #255
+## F-DYN-1 — `record_history` silently disables on a non-numeric flag → upstream EigenScript #255 (CLOSED upstream)
 
 `record_history of <flag>` is a flag setter: nonzero enables per-assignment
 history, `0` disables it. It treats **any non-numeric arg as `0` (disable)** — so
@@ -35,7 +35,7 @@ uses `prev` directly and never calls `record_history`.
 Filed upstream: **InauguralSystems/EigenScript#255**. (Lesson: verify the call
 before blaming the runtime — a divergence is neutral.)
 
-## F-DYN-2 — windowed predicates are sampling-rate sensitive (doc/semantics gap) → upstream EigenScript#256
+## F-DYN-2 — windowed predicates are sampling-rate sensitive (doc/semantics gap) → upstream EigenScript#256 (CLOSED upstream)
 
 Entropy of a number is `H(1/(1+|x|))` and the predicates fire on dH against
 `dh_small=0.01` / `dh_zero=0.001`. If you observe a smoothly-evolving quantity
@@ -64,7 +64,7 @@ argument is a literal list or a variable. Cost a real bug here (a two-param
 `energy_of(x, v)` silently got `v = null`). Known calling-convention behavior, but
 a sharp edge worth a line in the docs.
 
-## F-DYN-6 — predicate-driven convergence loops need "settled" + debounce, not bare `converged` → upstream EigenScript#256
+## F-DYN-6 — predicate-driven convergence loops need "settled" + debounce, not bare `converged` → upstream EigenScript#256 (CLOSED upstream)
 
 The idiomatic `loop while not converged` (stop the instant `report` says
 `converged`) is insufficient for two common, legitimate convergence shapes:
@@ -95,7 +95,11 @@ out of writing it: the Gauss-Seidel residual was confirmed to read `equilibrium`
 that *did* reach `converged` was the misleading case, and the real solver trace
 (the oracle) settled it.
 
-## F-DYN-5 — f-strings interpolate `name` / `name[i]` but not call expressions
+## F-DYN-5 — f-strings interpolate `name` / `name[i]` but not call expressions — FIXED upstream (verified 2026-07-03)
+
+Re-verified against EigenScript main: `f"{(analyze of 5)[0]}"` and
+`f"{len of [1,2,3]}"` both interpolate (the v0.23.0 f-string work).
+Drop the bind-to-a-variable workaround on current pins. Original report:
 
 `f"...{rr[0]}..."` works (variable, and variable-index), but
 `f"...{(analyze of [...])[0]}..."` is emitted **literally** — an `f`-string
@@ -103,7 +107,13 @@ placeholder containing a function call (or parenthesized expression) is not
 evaluated. Workaround: bind the expression to a variable first, then interpolate
 `{var}`. Minor; a doc note or a parser extension would help.
 
-## F-DYN-4 — `--lint` false-positive "unused parameter" (minor lint bug)
+## F-DYN-4 — `--lint` false-positive "unused parameter" (minor lint bug) — FIXED upstream (EigenScript PR #375, 2026-07-03)
+
+Root cause confirmed and fixed at the root: the lint use-analysis never
+descended into `unobserved:` blocks (`AST_UNOBSERVED` missing from the
+walkers — slices and list-pattern assigns had the same blind spot), so a
+parameter used only inside the recommended hot-loop idiom looked unused.
+The zeta repro lints clean on EigenScript main. Original report:
 
 `--lint` reports `unused parameter 'zeta'` for `profile`/`frame_velocity`, yet the
 ζ-sweep demonstrably varies by `zeta` at runtime. The parameter is used inside an

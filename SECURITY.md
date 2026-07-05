@@ -24,5 +24,4 @@ reproduce and the affected EigenScript version.
 ## Supported versions
 
 The latest tag on `main` is supported. `dynamics` tracks a pinned EigenScript
-version (see `.devcontainer/Dockerfile`'s `EIGS_REF`, currently v0.21.2); run
-against that or newer.
+version (see `.devcontainer/Dockerfile`'s `EIGS_REF`); run against that or newer.

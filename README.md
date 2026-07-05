@@ -72,8 +72,8 @@ forcing functions), each exercising a different observer sub-surface:
   PageRank's oscillatory residual needs the debounce. Run: `eigenscript solve.eigs`.
 
 Forcing-function findings (runtime gaps surfaced while building) are logged in
-[FINDINGS.md](FINDINGS.md) — currently a `record_history`/`prev` interaction bug,
-the predicates' sampling-rate sensitivity, and a calling-convention edge.
+[FINDINGS.md](FINDINGS.md) — most have graduated to upstream fixes
+(#255/#256/#280/#375); a calling-convention edge remains open.
 
 ## Develop locally
 
@@ -82,8 +82,8 @@ eigenscript dynamics.eigs            # parse + run the entry point
 bash tests/test_smoke.sh             # stage as a consumer would and import
 ```
 
-CI builds EigenScript from source on Linux and runs the smoke test on every push
-and PR (see `.github/workflows/test.yml`).
+CI builds EigenScript from source on Linux and runs the smoke and lab test scripts
+on every push and PR (see `.github/workflows/test.yml`).
 
 ## Publish
 

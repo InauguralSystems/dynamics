@@ -24,11 +24,11 @@ record_history of null  ; c is 10.0 ; c is 7.0 ; print of (prev of c)   # null (
 
 Originally mis-recorded here as "record_history breaks prev" — it was a wrong
 *call* (`null` instead of `1`). The real, fileable bug is the silent
-non-numeric→disable coercion (`builtin_record_history`, `src/builtins.c:3451`),
+non-numeric→disable coercion (`builtin_record_history`, `src/builtins.c:3746`),
 which masks a likely caller error; it should raise instead (cf. the strict-error
 direction of #245/#246). Note `prev` does **not** need `record_history` at all in
 normal programs — the C compiler auto-enables history when it compiles a temporal
-query (`src/compiler.c:1077`/`1818`); calling `record_history of null` *overrides*
+query (`src/compiler.c:1486`/`2350`); calling `record_history of null` *overrides*
 that auto-enable, which is what produced the surprising `null`. The physics module
 uses `prev` directly and never calls `record_history`.
 
@@ -49,7 +49,7 @@ per-observation dH is large enough to be legible. This sampling/threshold coupli
 is not documented in `docs/PREDICATES.md` and is easy to trip over — a real
 consumer of the predicates needs to know it. Candidate doc finding upstream.
 
-**Resolved upstream — EigenScript#259** (ready for review): documented in the new
+**Resolved upstream — EigenScript#259** (merged): documented in the new
 `docs/PREDICATES.md` "Convergence loops in practice" section (the observation-cadence
 note + the entropy-peak-at-`|x|=1`/`diverging` consequence). See F-DYN-6 below — both
 findings landed in the same doc PR.
@@ -85,7 +85,7 @@ useful pattern but it isn't obvious from `docs/PREDICATES.md`, which presents
 `loop while not converged` as the canonical form — worth a doc note that fast and
 oscillatory residuals need the settled+hold variant.
 
-**Resolved upstream — EigenScript#259** (ready for review): `docs/PREDICATES.md`
+**Resolved upstream — EigenScript#259** (merged): `docs/PREDICATES.md`
 gained a "Convergence loops in practice" section built from `solve.eigs`'s real
 Gauss-Seidel and PageRank traces, the settled-plus-`HOLD` recipe, plus the
 sampling-cadence (F-DYN-2) and entropy-peak-at-`|x|=1` notes. One correction came

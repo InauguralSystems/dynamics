@@ -1,0 +1,187 @@
+# predicate_calibration — scoring the observer's predicates AS FORECASTS.
+#
+# `converged` is not a description of the past. It is a claim about the future:
+# this value will not move much more. Same for `stable` and `equilibrium`.
+# `diverging` claims the opposite. So the predicates are forecasts, and a
+# forecast can be scored — you wait, and you see.
+#
+# Nobody has ever scored them. The thresholds they rest on (OBS_DH_ZERO,
+# OBS_DH_SMALL, h_low, the raw-window ratios) are hand-chosen constants that
+# have never been checked against what the values actually did next. Two
+# separate miscalibrations turned up the moment anyone looked:
+#
+#   * the ENTROPY channel certifies `equilibrium` for a value flipping +/-1
+#     forever — entropy is flat under steady motion, so it is blind to it
+#   * the VALUE channel reports `diverging` for a geometric decay to zero at
+#     rate > ~0.87 (EigenScript #674) — the textbook shape of CONVERGENCE
+#
+# This bench turns those anecdotes into a measurement.
+#
+# METHOD. Drive a value through a trajectory whose future we CONTROL, read the
+# predicate, then keep driving and observe what actually happened. Ground truth
+# is exact by construction. Real programs would be a better long-run corpus but
+# their futures are confounded; here the label is not in doubt.
+#
+# THE LABEL IS AN EXPLICIT CHOICE, which is the point. "Settled" needs a
+# horizon and a magnitude, and those are parameters here rather than constants
+# buried in eigenscript.c: over the next HORIZON steps, did the value move by
+# less than EPS? Sweeping them is how you find out which definition produces a
+# predicate anyone can use.
+#
+#   eigenscript predicate_calibration.eigs
+
+HORIZON is 40
+EPS is 0.001
+WARM is 220
+
+# ---- verdict buckets ---------------------------------------------------
+# The predicates that ASSERT settledness. A forecast of "will not move".
+define claims_settled(status) as:
+    if status == "converged":
+        return 1
+    if status == "equilibrium":
+        return 1
+    if status == "stable":
+        return 1
+    return 0
+
+# ---- trajectory driver -------------------------------------------------
+# kind: 0 decay, 1 constant, 2 drift, 3 oscillation, 4 damped oscillation
+# Returns [entropy_verdict, value_verdict, actually_settled, max_future_step]
+define run_case(kind, p) as:
+    local x is 1.0
+    local v is 0.0
+    local i is 0
+    # phase 1 — warm up WITH observation so both channels build a window
+    loop while i < WARM:
+        if kind == 0:
+            x is (x * p) + 0.0
+        if kind == 1:
+            x is 1.0 + 0.0
+        if kind == 2:
+            x is (x + p) + 0.0
+        if kind == 3:
+            x is (0.0 - x) * p
+            x is x + 0.0
+        if kind == 4:
+            v is (v - (0.15 * x)) * p
+            x is (x + (0.15 * v)) + 0.0
+        i is i + 1
+
+    local e_status is report of x
+    local v_status is report_value of x
+
+    # phase 2 — keep driving, unobserved, and watch what the value DOES.
+    # This is the ground truth the forecast is scored against.
+    local maxd is 0.0
+    local prev is x
+    local j is 0
+    unobserved:
+        loop while j < HORIZON:
+            if kind == 0:
+                x is x * p
+            if kind == 1:
+                x is 1.0
+            if kind == 2:
+                x is x + p
+            if kind == 3:
+                x is (0.0 - x) * p
+            if kind == 4:
+                v is (v - (0.15 * x)) * p
+                x is x + (0.15 * v)
+            local d is abs of (x - prev)
+            if d > maxd:
+                maxd is d
+            prev is x
+            j is j + 1
+
+    local truth is 0
+    if maxd < EPS:
+        truth is 1
+    return [e_status, v_status, truth, maxd]
+
+# ---- the sweep ---------------------------------------------------------
+kinds is [0, 0, 0, 0, 0, 0, 1, 2, 2, 2, 3, 3, 3, 4, 4]
+params is [0.30, 0.50, 0.70, 0.88, 0.95, 0.99, 0.0, 0.0005, 0.01, 0.1, 0.30, 0.90, 1.00, 0.80, 0.99]
+labels is ["decay .30", "decay .50", "decay .70", "decay .88", "decay .95", "decay .99", "constant", "drift .0005", "drift .01", "drift .1", "osc .30", "osc .90", "osc 1.0", "damped .80", "damped .99"]
+
+print of "=== observer predicates scored as FORECASTS ==="
+print of f"  label: settled == max step over next {HORIZON} steps < {EPS}"
+print of ""
+print of "  trajectory      truth     entropy-ch    says?   value-ch      says?"
+print of "  ---------------------------------------------------------------------"
+
+e_tp is 0
+e_fp is 0
+e_tn is 0
+e_fn is 0
+v_tp is 0
+v_fp is 0
+v_tn is 0
+v_fn is 0
+b_fp is 0
+b_fn is 0
+b_ok is 0
+
+for i in range of (len of kinds):
+    r is run_case of [kinds[i], params[i]]
+    e_s is r[0]
+    v_s is r[1]
+    truth is r[2]
+
+    e_say is claims_settled of e_s
+    v_say is claims_settled of v_s
+
+    if truth == 1:
+        if e_say == 1:
+            e_tp is e_tp + 1
+        else:
+            e_fn is e_fn + 1
+        if v_say == 1:
+            v_tp is v_tp + 1
+        else:
+            v_fn is v_fn + 1
+    else:
+        if e_say == 1:
+            e_fp is e_fp + 1
+        else:
+            e_tn is e_tn + 1
+        if v_say == 1:
+            v_fp is v_fp + 1
+        else:
+            v_tn is v_tn + 1
+
+    # TWO-QUIET rule: settled only when BOTH channels say so.
+    both is 0
+    if e_say == 1:
+        if v_say == 1:
+            both is 1
+    if truth == both:
+        b_ok is b_ok + 1
+    else:
+        if both == 1:
+            b_fp is b_fp + 1
+        else:
+            b_fn is b_fn + 1
+
+    t_txt is "moving "
+    if truth == 1:
+        t_txt is "settled"
+    e_mark is "-"
+    if e_say == 1:
+        e_mark is "SETTLED"
+    v_mark is "-"
+    if v_say == 1:
+        v_mark is "SETTLED"
+    print of f"  {labels[i]}   {t_txt}   {e_s}   {e_mark}   {v_s}   {v_mark}"
+
+print of ""
+print of "  scored as a 'will not move' forecast:"
+print of f"    entropy channel: correct={e_tp + e_tn}/{len of kinds}  false-settled={e_fp}  missed-settled={e_fn}"
+print of f"    value channel:   correct={v_tp + v_tn}/{len of kinds}  false-settled={v_fp}  missed-settled={v_fn}"
+print of ""
+print of f"    BOTH (two-quiet):  correct={b_ok}/{len of kinds}  false-settled={b_fp}  missed-settled={b_fn}"
+print of ""
+print of "  false-settled is the dangerous error: a loop gated on it HALTS while"
+print of "  the system is still moving. missed-settled only wastes iterations."
+print of "DONE"

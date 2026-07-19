@@ -1,0 +1,272 @@
+# predicate_fit — fit a settledness rule against measured labels, and score it
+# against the shipped predicates on held-out data.
+#
+# predicate_calibration.eigs established that the hand-chosen thresholds are
+# miscalibrated as forecasts: the entropy channel calls 27% of MOVING systems
+# settled, and the value channel calls convergence `diverging` (#674). Those
+# constants were never fit to anything. This fits them.
+#
+# The features come from `trajectory of x` (#421), which snapshots the slot's
+# own windows as a plain dict: `raw` (10 un-normalised steps), `rel` (the same
+# normalised by 1+|v|), `dh`, plus entropy/dH/last_value. Everything the
+# predicates see, nothing they don't.
+#
+# The label is the same explicit forecast as the bench: over the next HORIZON
+# steps, did the value move by less than EPS?
+#
+# METHOD MATTERS HERE. Rules are fit on a TRAIN half and scored on a HELD-OUT
+# half, because a threshold tuned and reported on the same data proves nothing
+# -- which is the failure mode that produced the shipped constants.
+#
+#   eigenscript predicate_fit.eigs
+
+HORIZON is 40
+EPS is 0.001
+WARM is 220
+
+define claims_settled(status) as:
+    if status == "converged":
+        return 1
+    if status == "equilibrium":
+        return 1
+    if status == "stable":
+        return 1
+    return 0
+
+# ---- one trajectory -> features + label --------------------------------
+# Returns [max_raw, shrink_ratio, flips, entropy, label, e_say, v_say]
+define sample_case(kind, p, warm) as:
+    local x is 1.0
+    local v is 0.0
+    local i is 0
+    loop while i < warm:
+        if kind == 0:
+            x is (x * p) + 0.0
+        if kind == 1:
+            x is 1.0 + 0.0
+        if kind == 2:
+            x is (x + p) + 0.0
+        if kind == 3:
+            x is ((0.0 - x) * p) + 0.0
+        if kind == 4:
+            v is (v - (0.15 * x)) * p
+            x is (x + (0.15 * v)) + 0.0
+        i is i + 1
+
+    local e_status is report of x
+    local v_status is report_value of x
+    local t is trajectory of x
+    local raw is t["raw"]
+    local n is len of raw
+
+    # feature 1: largest recent step magnitude
+    local max_raw is 0.0
+    local k is 0
+    loop while k < n:
+        local a is abs of raw[k]
+        if a > max_raw:
+            max_raw is a
+        k is k + 1
+
+    # feature 2: shrinkage — mean|raw| of the recent half over the older half.
+    # < 1 means steps are getting smaller (approaching a limit); >= 1 means
+    # they are not. This is the signal #674's `recent >= 0.5*older` blurs.
+    local half is floor of (n / 2)
+    local rec is 0.0
+    local old is 0.0
+    k is 0
+    loop while k < half:
+        rec is rec + (abs of raw[k])
+        k is k + 1
+    k is half
+    loop while k < n:
+        old is old + (abs of raw[k])
+        k is k + 1
+    if half > 0:
+        rec is rec / half
+    if (n - half) > 0:
+        old is old / (n - half)
+    local shrink is 1.0
+    if old > 0.0:
+        shrink is rec / old
+
+    # feature 3: sign flips (oscillation signature)
+    local flips is 0
+    k is 0
+    loop while k < (n - 1):
+        if (raw[k] * raw[k + 1]) < 0.0:
+            flips is flips + 1
+        k is k + 1
+
+    # label: keep driving, unobserved, and see what actually happens
+    local maxd is 0.0
+    local prev is x
+    local j is 0
+    unobserved:
+        loop while j < HORIZON:
+            if kind == 0:
+                x is x * p
+            if kind == 1:
+                x is 1.0
+            if kind == 2:
+                x is x + p
+            if kind == 3:
+                x is (0.0 - x) * p
+            if kind == 4:
+                v is (v - (0.15 * x)) * p
+                x is x + (0.15 * v)
+            local d is abs of (x - prev)
+            if d > maxd:
+                maxd is d
+            prev is x
+            j is j + 1
+    local label is 0
+    if maxd < EPS:
+        label is 1
+
+    return [max_raw, shrink, flips, t["entropy"], label, claims_settled of e_status, claims_settled of v_status]
+
+# ---- build the dataset -------------------------------------------------
+print of "=== fitting a settledness rule against measured labels ==="
+# NOT wrapped in `unobserved:` -- that suppresses the observer bookkeeping
+# this bench exists to measure. An earlier version did exactly that and every
+# rule scored identically, because the windows were empty and max_raw was 0.
+rows is []
+if 1 == 1:
+    # decay: rate sweep straddles the #674 cliff at ~0.87
+    warms is [30, 60, 110, 220]
+    for w in range of 4:
+        for i in range of 14:
+            r is 0.55 + (i * 0.032)
+            append of [rows, sample_case of [0, r, warms[w]]]
+    # drift: magnitude sweep across the EPS boundary
+    for w in range of 4:
+        for i in range of 10:
+            d is 0.00002 * (pow of [2.0, i * 1.1])
+            append of [rows, sample_case of [2, d, warms[w]]]
+    # oscillation: decaying through to sustained
+    for w in range of 4:
+        for i in range of 10:
+            q is 0.86 + (i * 0.018)
+            append of [rows, sample_case of [3, q, warms[w]]]
+    # damped oscillator
+    for w in range of 4:
+        for i in range of 10:
+            q is 0.90 + (i * 0.011)
+            append of [rows, sample_case of [4, q, warms[w]]]
+    for i in range of 8:
+        append of [rows, sample_case of [1, 0.0, 60 + (i * 20)]]
+
+n_rows is len of rows
+n_pos is 0
+for i in range of n_rows:
+    if rows[i][4] == 1:
+        n_pos is n_pos + 1
+print of f"  {n_rows} trajectories   settled={n_pos}   moving={n_rows - n_pos}"
+
+# ---- train / test split (alternating, so both halves span every family) --
+define score_rule(use_shrink, thr, rho, want_train) as:
+    local ok is 0
+    local fp is 0
+    local fn is 0
+    local tot is 0
+    for i in range of n_rows:
+        local in_train is 0
+        if (i % 2) == 0:
+            in_train is 1
+        local use is 0
+        if want_train == in_train:
+            use is 1
+        if use == 1:
+            tot is tot + 1
+            local f_max is rows[i][0]
+            local f_shr is rows[i][1]
+            local lab is rows[i][4]
+            local say is 0
+            if use_shrink == 0:
+                if f_max < thr:
+                    say is 1
+            else:
+                # extrapolate: for a shrinking series the LARGEST future step
+                # is the next one, ~ max_raw * shrink. If steps are not
+                # shrinking (shrink >= rho) it will not settle at all.
+                if f_shr < rho:
+                    if (f_max * f_shr) < thr:
+                        say is 1
+            if say == lab:
+                ok is ok + 1
+            else:
+                if say == 1:
+                    fp is fp + 1
+                else:
+                    fn is fn + 1
+    return [ok, fp, fn, tot]
+
+# grid search on TRAIN only
+best_thr is 0.0
+best_rho is 0.0
+best_ok is 0 - 1
+best_kind is 0
+for a in range of 26:
+    thr is 0.00001 * (pow of [2.0, a * 0.62])
+    r0 is score_rule of [0, thr, 0.0, 1]
+    if r0[0] > best_ok:
+        best_ok is r0[0]
+        best_thr is thr
+        best_rho is 0.0
+        best_kind is 0
+    for b in range of 12:
+        rho is 0.80 + (b * 0.035)
+        r1 is score_rule of [1, thr, rho, 1]
+        if r1[0] > best_ok:
+            best_ok is r1[0]
+            best_thr is thr
+            best_rho is rho
+            best_kind is 1
+
+kind_txt is "max_raw < thr"
+if best_kind == 1:
+    kind_txt is "shrink < rho AND max_raw*shrink < thr"
+print of ""
+print of f"  fitted on TRAIN half: {kind_txt}"
+print of f"    thr={best_thr}  rho={best_rho}  train_correct={best_ok}"
+
+# ---- score everything on the HELD-OUT half ------------------------------
+fit is score_rule of [best_kind, best_thr, best_rho, 0]
+e_ok is 0
+e_fp is 0
+e_fn is 0
+v_ok is 0
+v_fp is 0
+v_fn is 0
+n_test is 0
+for i in range of n_rows:
+    if (i % 2) == 1:
+        n_test is n_test + 1
+        lab is rows[i][4]
+        es is rows[i][5]
+        vs is rows[i][6]
+        if es == lab:
+            e_ok is e_ok + 1
+        else:
+            if es == 1:
+                e_fp is e_fp + 1
+            else:
+                e_fn is e_fn + 1
+        if vs == lab:
+            v_ok is v_ok + 1
+        else:
+            if vs == 1:
+                v_fp is v_fp + 1
+            else:
+                v_fn is v_fn + 1
+
+print of ""
+print of f"  HELD-OUT half ({n_test} trajectories) — accuracy, false-settled, missed:"
+print of f"    entropy channel (shipped): {e_ok}/{n_test}   false-settled={e_fp}  missed={e_fn}"
+print of f"    value channel   (shipped): {v_ok}/{n_test}   false-settled={v_fp}  missed={v_fn}"
+print of f"    FITTED RULE:               {fit[0]}/{fit[3]}   false-settled={fit[1]}  missed={fit[2]}"
+print of ""
+print of "  false-settled is the dangerous error — a loop gated on it halts"
+print of "  while the system is still moving."
+print of "DONE"

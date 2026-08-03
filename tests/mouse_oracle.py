@@ -68,6 +68,12 @@ CANVAS = (12, 12, 436, 446)
 ZETA_LABEL_XY = (468, 78)
 ZOOM_LABEL_XY = (468, 198)
 SLIDER = (468, 100, 192)                    # x, y (centre), width
+# Slice 3: the view selector at panel-relative (8, 412, 192, 26), and the
+# first caption of the bifurcation control column at panel-relative
+# (8, 60) — a slot the phase-portrait column leaves blank, so decoding it
+# reads the CURRENT view rather than a label that exists in both.
+MODE_BTN = (564, 437)
+BIF_LABEL_XY = (468, 72)
 CHANGED_MIN = 100                           # pixels: a redraw of the whole plot
 # Advancement is measured against a noise floor the run itself pins: the
 # paused checks below come back at EXACTLY 0 differing pixels, twice, so a
@@ -215,6 +221,10 @@ FAULTS = {
     "pan": ("        _drag.active is 1\n", "        _drag.active is 0\n"),
     # the tick advances the simulation even while paused.
     "pause": ("    if _app.paused == 0:\n", "    if _app.paused == 0 or 1 == 1:\n"),
+    # the view selector's handler fires but switches nothing — the class
+    # of bug where "a handler ran" is mistaken for "the UI changed".
+    "mode": ('    if w.value == 1:\n        return set_mode of "bif"\n',
+             '    if w.value == 1:\n        return null\n'),
 }
 
 
@@ -222,7 +232,7 @@ def build_tree(tmp, fault):
     """Copy the app under test into tmp, optionally with a planted fault."""
     tree = os.path.join(tmp, "app")
     os.makedirs(tree)
-    for name in ("orbit.eigs", "orbit_theme.eigs", "physics.eigs"):
+    for name in ("orbit.eigs", "orbit_theme.eigs", "physics.eigs", "logistic.eigs"):
         shutil.copy(os.path.join(REPO, name), os.path.join(tree, name))
     if fault:
         needle, repl = FAULTS[fault]
@@ -365,6 +375,42 @@ def main():
         print("decoded zeta label after slider drag: %r" % zeta_txt)
         check(zeta_txt.startswith("zeta =") and zeta_txt != base_zeta,
               "slider: dragging moves zeta %r -> %r" % (base_zeta, zeta_txt))
+
+        # 8. the view selector (slice 3). Clicking it must swap the phase
+        # portrait for the bifurcation chart — verified in PIXELS on both
+        # halves of the window: the control column decodes to the
+        # bifurcation captions, and the plot area is redrawn wholesale.
+        # Then the diagram must be STATIC: two frames 0.4 s apart
+        # pixel-identical is the visible face of "the bifurcation tick
+        # does no per-frame work", which is what the memory gate
+        # (tests/test_bif_mem.sh) measures in RSS.
+        before_toggle = grab(wid, tmp)
+        click_at(*MODE_BTN)
+        bif = grab(wid, tmp)
+        bif_txt = decode_line(bif, atlas, BIF_LABEL_XY)
+        print("decoded bifurcation column: %r" % bif_txt)
+        check(bif_txt == "logistic map",
+              "mode: the control column reads %r after the view toggle" % bif_txt)
+        d = region_diff(before_toggle, bif, CANVAS)
+        check(d > CHANGED_MIN,
+              "mode: the plot area is redrawn as the bifurcation chart (%d px differ)" % d)
+        time.sleep(0.4)
+        bif_b = grab(wid, tmp)
+        d = region_diff(bif, bif_b, CANVAS)
+        check(d == 0,
+              "mode: the bifurcation diagram is static between frames (%d px differ)" % d)
+
+        # 9. toggling back restores the phase portrait — the pre-existing
+        # view must survive a round trip through the new one.
+        click_at(*MODE_BTN)
+        back = grab(wid, tmp)
+        back_txt = decode_line(back, atlas, ZETA_LABEL_XY)
+        print("decoded zeta label after toggling back: %r" % back_txt)
+        check(back_txt == zeta_txt,
+              "mode: toggling back restores the phase-portrait column (%r)" % back_txt)
+        d = region_diff(before_toggle, back, CANVAS)
+        check(d == 0,
+              "mode: the phase portrait comes back pixel-for-pixel (%d px differ)" % d)
 
     except Stop:
         print("(stopping at the first failure)")

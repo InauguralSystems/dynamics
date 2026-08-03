@@ -17,7 +17,7 @@
 # names stay private. This 0.1.0 seed is the equilibrium-relaxation primitive;
 # the physics ζ-sweep, Conway, and iterative-solver modules build on it.
 
-VERSION is "0.1.0"
+VERSION is "0.1.0"  # lint: allow W001 -- exported package surface
 
 # Relax a value from `start` toward `target` by geometric steps of factor
 # `rate` (0 < rate < 1), stopping when the observer reports the trajectory has

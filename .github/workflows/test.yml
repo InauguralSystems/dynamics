@@ -25,8 +25,11 @@ jobs:
         with:
           runCmd: |
             set -e
+            EIGENSCRIPT=eigenscript bash tests/test_lint.sh
             EIGENSCRIPT=eigenscript bash tests/test_smoke.sh
             EIGENSCRIPT=eigenscript bash tests/test_lab.sh
             EIGENSCRIPT=eigenscript bash tests/test_orbit_hist.sh
+            EIGENSCRIPT=eigenscript bash tests/test_bifurcation.sh
             EIGENSCRIPT=eigenscript bash tests/test_orbit_oracle.sh
             EIGENSCRIPT=eigenscript bash tests/test_orbit_mouse.sh
+            EIGENSCRIPT=eigenscript bash tests/test_bif_mem.sh

@@ -22,7 +22,6 @@
 
 HORIZON is 40
 EPS is 0.001
-WARM is 220
 
 define claims_settled(status) as:
     if status == "converged":

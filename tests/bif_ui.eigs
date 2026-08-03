@@ -1,0 +1,35 @@
+# Bifurcation-view driver for the MEMORY GATE (dynamics#20 rung 1,
+# slice 3). Opens the REAL window straight into the bifurcation view and
+# runs exactly BIF_TICKS frames of the real tick + real chart render,
+# then quits — the same path an interactive session runs, with a frame
+# budget instead of an Escape key.
+#
+# BIF_MODE:
+#   static  — sit in the bifurcation view for the whole run. This is the
+#             steady-state shape: the sweep exists, nothing rebuilds it,
+#             and RSS must be flat in the frame count.
+#   toggle  — flip views on EVERY frame. This is the leak probe for the
+#             `sweep_done` guard specifically: N toggles must still cost
+#             exactly one sweep, one series and four markers, which the
+#             BUILT/SERIES/POINTS/MARKERS report below pins numerically
+#             on top of the RSS measurement.
+#
+# The frame hook only calls orbit's own public view-switch; it never
+# touches the simulation.
+import orbit
+
+ticks is num of (env_get of "BIF_TICKS")
+mode is env_get of "BIF_MODE"
+
+define flip(sim) as:  # lint: allow W002 -- orbit's frame-hook signature
+    orbit.toggle_mode of []
+    return null
+
+if mode == "toggle":
+    orbit.set_frame_hook of flip
+
+orbit.run_bif_auto of ticks
+
+st is orbit.bif_stats of []
+write_text of [(env_get of "BIF_OUT"), f"BUILT {st.built}\nSERIES {st.series}\nPOINTS {st.points}\nMARKERS {st.markers}\n"]
+print of "BIF-UI-OK"

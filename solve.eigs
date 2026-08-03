@@ -44,7 +44,9 @@ define max_abs_diff(u, v) as:
         i is i + 1
     return m
 
-define dot(u, v) as:
+# Named `vdot`, not `dot`: `dot` is a runtime builtin and a same-named
+# definition shadows it for the whole file (lint W013).
+define vdot(u, v) as:
     n is len of u
     s is 0.0
     i is 0
@@ -136,9 +138,9 @@ define power_iter(a, maxit) as:
         y is zeros of n
         i is 0
         loop while i < n:
-            y[i] is dot of [a[i], x]
+            y[i] is vdot of [a[i], x]
             i is i + 1
-        nrm is sqrt of (dot of [y, y])
+        nrm is sqrt of (vdot of [y, y])
         i is 0
         loop while i < n:
             y[i] is y[i] / nrm
@@ -175,7 +177,7 @@ define pagerank(m, maxit) as:
         rn is zeros of n
         i is 0
         loop while i < n:
-            rn[i] is dot of [m[i], r]
+            rn[i] is vdot of [m[i], r]
             i is i + 1
         tot is 0.0
         i is 0

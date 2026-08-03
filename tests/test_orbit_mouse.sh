@@ -69,7 +69,7 @@ grep -q "^all mouse + render-decode checks passed$" "$TMP/clean.log" || {
     exit 1
 }
 
-for fault in pause pan; do
+for fault in pause pan mode; do
     echo "--- planted fault: $fault ---"
     run_oracle "$TMP/fault_$fault.log" --fault "$fault" --stop-on-fail
     grep -q "mouse-oracle failure" "$TMP/fault_$fault.log" || {

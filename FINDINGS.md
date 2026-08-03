@@ -144,6 +144,48 @@ than one binding.
 
 ---
 
+## F-DYN-8 — `import` silently prefers the stdlib over a same-named module in the working directory
+
+`import physics` from the orbit-lab front-end resolved to the **stdlib's**
+`lib/physics.eigs` (the physics *formula* library), not this repo's
+`physics.eigs` sitting in the working directory. No error, no warning — the
+module simply has none of the expected members, so `physics.SUB` reads `null`
+and the first symptom is a downstream type error ("cannot compare num and none").
+Search order is stdlib-first, and the stdlib is large enough (~75 modules) that
+name collisions with consumer files are easy to hit. Cost a real bug here.
+Workaround used: `load_file of "physics.eigs"` (path-explicit, DeslanStudio's
+shared-scope pattern). Candidate upstream: a shadowing warning when a
+cwd module is eclipsed by a stdlib module of the same name, or cwd-first
+resolution for explicit relative candidates. Upstream-fileable (EigenScript).
+
+## F-DYN-9 — lib/ui gap: no x-y (parametric) plot widget — phase portraits need raw canvas
+
+Fleet UI ladder rung 1 (dynamics#20) needed a live **phase portrait**: a
+polyline in *world coordinates* (x, v), fixed world window, axes through the
+world origin, an equilibrium marker. `lib/ui_w_viz.eigs`'s `chart` widget is
+strictly a y-vs-index series plot (each series is a list of y values; x is
+`i/(n-1)` across the plot width, y autoscaled) — there is no way to express an
+x-y parametric/scatter series, a fixed aspect world window, or pan/zoom.
+This slice canvas-draws the portrait (`orbit.eigs` `_paint_phase` on a
+`ui.canvas`), which the fleet standard permits, but this is the third consumer
+now forcing the chart/plot widget (with eigen-sheet#26 and EigenMiniSat#76):
+needed are xy series in data coordinates, axis placement at data zero,
+markers, and pan/zoom interaction. For `eigenscript-ui-toolkit-engineer`.
+
+## F-DYN-10 — lib/ui gap: viz widget surfaces hardcode their colours instead of reading theme keys
+
+`_render_chart` / `_render_bar_chart` / `_render_waveform_view` in
+`lib/ui_w_viz.eigs` paint their backgrounds, borders and grids with literal
+RGB values (`25, 25, 35`, `40, 40, 55`, `18, 18, 26`, …) rather than theme
+keys. A themed app (the DeslanStudio in-place theme-apply pattern, used here
+by `orbit_theme.eigs`) can restyle every button and slider but NOT a chart's
+plot surface — the one surface a data app is mostly made of. Even if F-DYN-9's
+xy chart existed today, it could not have taken the orbit-lab palette. Wants
+theme keys (e.g. `plot_bg`, `plot_grid`, `plot_border`) read at render time.
+For `eigenscript-ui-toolkit-engineer`.
+
+---
+
 ## Non-findings (verified working — recorded to avoid re-investigating)
 
 - **Interrogatives work** as expressions: `print of (what is energy)`,

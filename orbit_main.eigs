@@ -1,0 +1,12 @@
+# Standalone launcher for the orbit lab (fleet UI ladder rung 1).
+#
+#   make gfx -C <EigenScript>        # once, to get a gfx-capable build
+#   eigenscript orbit_main.eigs      # opens the phase-portrait window
+#
+# The lab logic lives in orbit.eigs (a lib/ui front-end over the pure
+# physics.eigs core); this file is just the front-end entry. Drag the
+# slider to change zeta, Space (or the button) to pause/resume, Escape
+# (or the window close box) to quit.
+import orbit
+
+orbit.run of []

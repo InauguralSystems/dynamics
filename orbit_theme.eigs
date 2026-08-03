@@ -1,0 +1,106 @@
+# ============================================================
+# orbit lab theme (fleet UI ladder rung 1 — dynamics#20)
+# ============================================================
+#
+# Named palette for the orbit-lab window, mapped onto lib/ui's theme
+# table. Pattern copied from DeslanStudio src/client/theme.eigs:
+#
+# orbit_theme_apply overlays this palette onto the ACTIVE theme dict in
+# place, field by field. That is BY DESIGN, not a workaround — do not
+# "simplify" it to `set_theme of (_orbit_theme_table of [])`.
+#
+# The table below is a PARTIAL override: colour keys only. A full lib/ui
+# theme also carries the sizing and shade keys the renderers and the
+# layout engine read — font_scale, char_w/char_h, padding, border_width,
+# radius/radius_sm/radius_lg, hover_shade, pressed_shade. set_theme
+# REPLACES the theme wholesale, so handing it this table nulls every one
+# of those and every renderer reading them breaks. The in-place loop
+# keeps the defaults and changes only the colours.
+#
+# Call orbit_theme_apply BEFORE constructing widgets: several widget
+# constructors bake theme colours into the widget dict at construction
+# time.
+#
+# The plot surface (the phase-portrait canvas in orbit.eigs) is
+# canvas-drawn; it reads its colours from OL_COLORS below (the plot_*
+# keys), so the whole window — chrome and plot — is themed from this
+# one module.
+
+import ui
+
+# ---- palette (deep-space lab: teal trace, amber head) --------------
+
+OL_COLORS is {
+    "bg":          [16, 18, 28],     # window background
+    "container":   [24, 27, 42],     # side panel / control column
+    "panel":       [32, 36, 56],     # headers, bars
+    "input":       [42, 46, 68],     # buttons, inputs, control bg
+    "border":      [56, 60, 84],     # general borders
+    "accent":      [64, 200, 180],   # primary accent (teal — the orbit trace)
+    "accent2":     [255, 176, 66],   # secondary accent (amber — the orbit head)
+    "red":         [255, 96, 96],    # divergence / alerts
+    "text":        [230, 233, 240],
+    "text_dim":    [140, 146, 165],
+    "text_vdim":   [90, 95, 112],
+    "hover":       [58, 63, 92],     # hover bg
+    "disabled":    [30, 33, 48],     # disabled control bg
+    "plot_bg":     [10, 12, 20],     # phase-portrait surface
+    "plot_grid":   [30, 34, 52],     # world-grid lines
+    "plot_axis":   [70, 76, 104],    # x = 0 / v = 0 axes
+    "plot_trace":  [64, 200, 180],   # orbit polyline (== accent)
+    "plot_head":   [255, 176, 66],   # current state marker (== accent2)
+    "plot_equil":  [255, 96, 96]     # analytic equilibrium marker at (0, 0)
+}
+
+# lib/ui theme-key mapping. Sizing keys (font_scale/char_w/char_h/
+# padding/radius...) keep lib/ui's defaults.
+define _orbit_theme_table() as:
+    local c is OL_COLORS
+    return {
+        "bg": c.bg,
+        "panel_bg": c.container,
+        "panel_border": c.border,
+        "btn_bg": c.input,
+        "btn_hover": c.hover,
+        "btn_pressed": c.accent,
+        "btn_disabled": c.disabled,
+        "btn_text": c.text,
+        "btn_text_disabled": c.text_vdim,
+        "text_color": c.text,
+        "text_dim": c.text_dim,
+        "accent": c.accent,
+        "focus_ring": c.accent,
+        "slider_track": c.border,
+        "slider_fill": c.accent,
+        "slider_thumb": c.text,
+        "toggle_off": c.input,
+        "toggle_on": c.accent,
+        "knob_bg": c.input,
+        "knob_fg": c.accent,
+        "knob_pointer": c.text,
+        "dropdown_bg": c.input,
+        "dropdown_hover": c.hover,
+        "dropdown_item_hover": c.hover,
+        "dropdown_arrow": c.text_dim,
+        "tab_bg": c.panel,
+        "tab_active": c.bg,
+        "tab_hover": c.panel,
+        "tab_text": c.text_dim,
+        "tab_text_active": c.accent,
+        "menu_bg": c.input,
+        "menu_hover": c.hover,
+        "menu_border": c.border,
+        "tooltip_bg": c.input,
+        "tooltip_text": c.text,
+        "disabled_overlay": c.bg,
+        "selection_bg": c.accent
+    }
+
+# Apply the orbit-lab palette to lib/ui's ACTIVE theme, in place.
+# Call BEFORE constructing widgets.
+define orbit_theme_apply() as:
+    local t is ui.theme of null
+    local tbl is _orbit_theme_table of []
+    for k in keys of tbl:
+        dict_set of [t, k, tbl[k]]
+    return t

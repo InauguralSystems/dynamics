@@ -1,0 +1,252 @@
+# orbit — the phase-portrait / orbit-lab window (fleet UI ladder rung 1,
+# dynamics#20): a lib/ui front-end over the EXISTING physics core.
+#
+# Fleet split (eigen-edit pattern): physics.eigs is the pure core,
+# loaded UNMODIFIED — the same `step` semi-implicit Euler integrator
+# and the same per-frame cadence (SUB unobserved substeps per observed
+# frame) the specimen uses. It is load_file'd, not `import`ed: the
+# stdlib ships a lib/physics.eigs (formula library) and import prefers
+# it, silently shadowing the repo file (FINDINGS F-DYN-8). `run` is the
+# gfx front-end; it is defined but never called at load time, so
+# `import orbit` stays side-effect-free on the gfx surface and
+# headless-testable in a non-gfx build. (Loading does run physics.eigs's
+# console demo once — the specimen is a runnable program; its output
+# goes to stdout and perturbs nothing.)
+#
+# THE ORACLE (tests/test_orbit_oracle.sh): a headless run
+# (`run_headless`) and a UI-stepped run (`run_auto`, the real window,
+# real per-tick draw) of the same zeta/frames must produce
+# byte-identical trajectory dumps. Both paths advance the simulation
+# through the ONE `frame_advance` below and format through the ONE
+# `traj_line` — the UI is a pure reader of the simulation state. If the
+# dumps ever differ, the UI has perturbed the math; that is the bug.
+#
+# System: the damped unit oscillator x'' = -x - 2*zeta*x' from
+# physics.eigs — the repo's best-documented system, with the analytic
+# equilibrium at (x, v) = (0, 0) (marked on the plot). The window shows
+# the live phase portrait (x horizontal, v vertical), a zeta slider,
+# pause/resume, and the observer's live regime forecasts for energy and
+# displacement (report of — the observer IS the instrument).
+
+load_file of "physics.eigs"
+import ui
+import orbit_theme
+
+VERSION is "0.1.0"  # lint: allow W001 -- exported module surface
+
+DEFAULT_ZETA is 0.15
+
+WIN_W is 680
+WIN_H is 470
+
+# World window of the phase portrait: x and v both span [-RANGE, RANGE].
+RANGE is 1.5
+
+# How many trail points the canvas draws (the dump keeps ALL points;
+# the draw window is display-only and cannot perturb the trajectory).
+TRAIL is 600
+
+# ---- simulation state (shared by headless and UI paths) --------------
+
+define new_sim(zeta) as:
+    return {"zeta": zeta, "state": [1.0, 0.0], "pts": [[1.0, 0.0]], "frame": 0}
+
+# Advance ONE frame: SUB unobserved substeps of the core's step —
+# exactly the specimen's cadence. Appends the frame state to sim.pts.
+define frame_advance(sim) as:
+    local cur is sim.state
+    local z is sim.zeta
+    unobserved:
+        local sub_i is 0
+        loop while sub_i < SUB:
+            cur is step of [cur, z]
+            sub_i is sub_i + 1
+    sim.state is cur
+    append of [sim.pts, cur]
+    sim.frame is sim.frame + 1
+    return sim
+
+# ---- trajectory dump (the oracle's byte surface) ---------------------
+
+define traj_line(p) as:
+    return f"{p[0]} {p[1]}"
+
+define traj_text(sim) as:
+    local lines is []
+    local i is 0
+    loop while i < (len of sim.pts):
+        local p is sim.pts[i]
+        append of [lines, (traj_line of p)]
+        i is i + 1
+    return (join of [lines, "\n"]) + "\n"
+
+# Headless reference run: same system, same params, no window.
+define run_headless(zeta, frames) as:
+    local sim is new_sim of zeta
+    local f is 0
+    loop while f < frames:
+        frame_advance of sim
+        f is f + 1
+    return traj_text of sim
+
+# ---- UI state --------------------------------------------------------
+
+_app is {
+    "sim": null,
+    "auto_frames": 0 - 1,
+    "out_path": "",
+    "paused": 0,
+    "canvas": null,
+    "lbl_e": null,
+    "lbl_x": null,
+    "lbl_z": null,
+    "btn_pause": null
+}
+
+# Observer readout bindings: module globals so the observer window
+# builds across ticks (a per-tick local would lose its trajectory —
+# observer state is keyed to the binding's slot).
+_obs_energy is 0.0
+_obs_x is 0.0
+
+# ---- phase-portrait canvas (reads colours from orbit_theme) ----------
+
+define _px(w, ax, xval) as:
+    return ax + (floor of ((xval + RANGE) / (2.0 * RANGE) * w.w))
+
+define _py(w, ay, vval) as:
+    return ay + (floor of ((RANGE - vval) / (2.0 * RANGE) * w.h))
+
+define _paint_phase(w, ax, ay) as:
+    local c is orbit_theme.OL_COLORS
+    gfx_rect of [ax, ay, w.w, w.h, c.plot_bg[0], c.plot_bg[1], c.plot_bg[2]]
+    # world grid every 0.5 units
+    local g is 0.0 - 1.0
+    loop while g <= 1.0:
+        local gx is _px of [w, ax, g]
+        local gy is _py of [w, ay, g]
+        gfx_line of [gx, ay, gx, ay + w.h - 1, c.plot_grid[0], c.plot_grid[1], c.plot_grid[2]]
+        gfx_line of [ax, gy, ax + w.w - 1, gy, c.plot_grid[0], c.plot_grid[1], c.plot_grid[2]]
+        g is g + 0.5
+    # axes x = 0 and v = 0
+    local ox is _px of [w, ax, 0.0]
+    local oy is _py of [w, ay, 0.0]
+    gfx_line of [ox, ay, ox, ay + w.h - 1, c.plot_axis[0], c.plot_axis[1], c.plot_axis[2]]
+    gfx_line of [ax, oy, ax + w.w - 1, oy, c.plot_axis[0], c.plot_axis[1], c.plot_axis[2]]
+    # orbit trail (last TRAIL frames; display window only)
+    local sim is _app.sim
+    if sim != null:
+        local n is len of sim.pts
+        local i0 is 0
+        if n > TRAIL:
+            i0 is n - TRAIL
+        local i is i0 + 1
+        loop while i < n:
+            local pa is sim.pts[i - 1]
+            local pb is sim.pts[i]
+            gfx_line of [(_px of [w, ax, pa[0]]), (_py of [w, ay, pa[1]]), (_px of [w, ax, pb[0]]), (_py of [w, ay, pb[1]]), c.plot_trace[0], c.plot_trace[1], c.plot_trace[2]]
+            i is i + 1
+        # analytic equilibrium at the origin
+        gfx_circle of [ox, oy, 4, c.plot_equil[0], c.plot_equil[1], c.plot_equil[2]]
+        # current state
+        local cur is sim.state
+        gfx_circle of [(_px of [w, ax, cur[0]]), (_py of [w, ay, cur[1]]), 3, c.plot_head[0], c.plot_head[1], c.plot_head[2]]
+    return null
+
+# ---- widget callbacks ------------------------------------------------
+
+define _zeta_label_text() as:
+    local z is _app.sim.zeta
+    return f"zeta = {(floor of (z * 100.0)) / 100.0}"
+
+define _on_zeta_change(w) as:
+    _app.sim.zeta is w.value
+    _app.lbl_z.text is _zeta_label_text of []
+    return null
+
+define _on_pause(w) as:
+    _app.paused is w.value
+    return null
+
+define _on_key(ev) as:
+    if ev.type == "keydown":
+        if ev.key == "escape":
+            return 0
+        if ev.key == "space":
+            if _app.paused == 1:
+                _app.paused is 0
+            else:
+                _app.paused is 1
+            _app.btn_pause.value is _app.paused
+    return 1
+
+# ---- per-frame tick (the UI-stepped path of the oracle) --------------
+
+define _tick(root) as:  # lint: allow W002 -- ui.app_loop's on_tick signature
+    if _app.auto_frames >= 0 and _app.sim.frame >= _app.auto_frames:
+        write_text of [_app.out_path, (traj_text of _app.sim)]
+        ui.request_quit of null
+        return null
+    if _app.paused == 0:
+        frame_advance of _app.sim
+        _obs_energy is energy_of of (_app.sim.state)
+        _obs_x is _app.sim.state[0]
+        local er is report of _obs_energy
+        local xr is report of _obs_x
+        _app.lbl_e.text is f"energy : {er}"
+        _app.lbl_x.text is f"x      : {xr}"
+    return null
+
+# ---- window construction (theme applied BEFORE widgets) --------------
+
+define _build(zeta) as:
+    orbit_theme.orbit_theme_apply of []
+    local root is ui.panel of ["root", 0, 0, WIN_W, WIN_H]
+    local cv is ui.canvas of ["phase", 12, 12, 436, 446, _paint_phase, null]
+    ui.add_child of [root, cv]
+    _app.canvas is cv
+    local side is ui.panel of ["side", 460, 12, 208, 446]
+    ui.add_child of [root, side]
+    ui.add_child of [side, (ui.section of ["hdr", 8, 8, 192, "orbit lab"])]
+    ui.add_child of [side, (ui.label of ["sys", 8, 34, "x'' = -x - 2*zeta*x'"])]
+    local lz is ui.label of ["zl", 8, 66, "zeta"]
+    ui.add_child of [side, lz]
+    _app.lbl_z is lz
+    local sl is ui.slider of ["zeta", 8, 88, 192, 0.0, 2.0, zeta, _on_zeta_change]
+    ui.add_child of [side, sl]
+    local bp is ui.toggle_button of ["pause", 8, 120, 192, 26, "Pause", _on_pause]
+    ui.add_child of [side, bp]
+    _app.btn_pause is bp
+    ui.add_child of [side, (ui.section of ["obs", 8, 168, 192, "observer forecast"])]
+    local le is ui.label of ["le", 8, 194, "energy : -"]
+    ui.add_child of [side, le]
+    _app.lbl_e is le
+    local lx is ui.label of ["lx", 8, 214, "x      : -"]
+    ui.add_child of [side, lx]
+    _app.lbl_x is lx
+    ui.add_child of [side, (ui.label of ["eq", 8, 246, "equilibrium (0,0) marked red"])]
+    ui.add_child of [side, (ui.label of ["keys", 8, 276, "space pause - esc quit"])]
+    _on_zeta_change of sl
+    return root
+
+# ---- entry points ----------------------------------------------------
+
+# frames < 0: interactive until Escape / close. frames >= 0: advance
+# exactly `frames` frames through the REAL window + draw path, dump the
+# trajectory to out_path, quit (the oracle's UI-stepped run).
+define run_session(zeta, frames, out_path) as:
+    _app.sim is new_sim of zeta
+    _app.auto_frames is frames
+    _app.out_path is out_path
+    _app.paused is 0
+    local root is _build of zeta
+    gfx_open of [WIN_W, WIN_H, "dynamics - orbit lab"]
+    ui.app_loop of [root, _on_key, _tick]
+    gfx_close of null
+    return null
+
+define run() as:
+    return run_session of [DEFAULT_ZETA, 0 - 1, ""]
+
+define run_auto(zeta, frames, out_path) as:
+    return run_session of [zeta, frames, out_path]

@@ -1,0 +1,13 @@
+# Oracle half 2: the UI-STEPPED trajectory. Opens the REAL orbit-lab
+# window (themed widgets, live phase-portrait redraw every frame),
+# advances exactly ORBIT_FRAMES frames through the same tick path an
+# interactive session uses, dumps the trajectory, and quits. Needs a
+# gfx-capable EigenScript build and a display (xvfb-run in CI).
+import orbit
+
+z is num of (env_get of "ORBIT_ZETA")
+frames is num of (env_get of "ORBIT_FRAMES")
+out is env_get of "ORBIT_OUT"
+
+orbit.run_auto of [z, frames, out]
+print of "UI-DUMP-OK"

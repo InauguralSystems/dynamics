@@ -34,9 +34,17 @@ w is gfx_open of [64, 48, "probe"]
 gfx_close of null
 print of "GFXOK"
 EOF
-if ! $XVFB "$EIGS" "$TMP/gfxprobe.eigs" 2>/dev/null | grep -q "GFXOK"; then
-    echo "SKIP: runtime is not gfx-capable (build with 'make gfx') — UI oracle not run"
-    exit 2
+PROBE_OUT=$($XVFB "$EIGS" "$TMP/gfxprobe.eigs" 2>&1 || true)
+if ! echo "$PROBE_OUT" | grep -q "GFXOK"; then
+    if echo "$PROBE_OUT" | grep -q "undefined variable 'gfx_open'"; then
+        echo "SKIP: runtime is not gfx-capable (build with 'make gfx') — UI oracle not run"
+        exit 2
+    fi
+    # gfx builtins exist (or the probe died before the interpreter ran):
+    # the display/SDL environment is broken, which is a FAILURE, not a skip.
+    echo "FAIL: gfx probe could not open a window — probe output:"
+    echo "$PROBE_OUT"
+    exit 1
 fi
 
 echo "--- headless reference trajectory (zeta=$ZETA, frames=$FRAMES) ---"

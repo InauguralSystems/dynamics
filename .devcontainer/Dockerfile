@@ -28,6 +28,7 @@ RUN apt-get update \
         git \
         libsdl2-2.0-0 \
         python3 \
+        xauth \
         xvfb \
  && rm -rf /var/lib/apt/lists/*
 

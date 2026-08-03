@@ -35,6 +35,7 @@ RUN apt-get update \
         libsdl2-2.0-0 \
         python3 \
         python3-pil \
+        time \
         x11-apps \
         xauth \
         xdotool \

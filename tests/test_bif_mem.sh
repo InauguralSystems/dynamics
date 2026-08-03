@@ -58,6 +58,17 @@ if [ -z "${DISPLAY:-}" ]; then
     XVFB="xvfb-run -a"
 fi
 
+# The measuring instrument itself is a precondition, and a LOUD one. GNU
+# time is a separate package from the shell builtin; without it every run
+# exits 127 and a naive gate reports "the process died under the cap" —
+# i.e. it blames the thing it is measuring for the absence of the ruler.
+# CI caught exactly that. This is a failure, never a skip: a memory gate
+# that quietly does not measure is worse than no gate.
+if ! command -v /usr/bin/time > /dev/null; then
+    echo "FAIL: /usr/bin/time (GNU time, package 'time') is not installed — peak RSS cannot be measured, so this gate cannot run"
+    exit 1
+fi
+
 echo "--- gfx capability probe ---"
 cat > "$TMP/gfxprobe.eigs" <<'EOF'
 w is gfx_open of [64, 48, "probe"]
@@ -89,6 +100,10 @@ measure() {
     set -e
     PEAK=$(tail -1 "$tf" 2>/dev/null || echo 0)
     case "$PEAK" in ''|*[!0-9]*) PEAK=0 ;; esac
+    # 0 KB is not a measurement. Separated from a real overrun so the
+    # verdict never blames the program for a missing ruler.
+    MEASURED=1
+    if [ "$PEAK" -eq 0 ]; then MEASURED=0; fi
 }
 
 # stat_field <file> <name>
@@ -111,7 +126,10 @@ run_gate() {
             points=$(stat_field "$STATS" POINTS)
             markers=$(stat_field "$STATS" MARKERS)
             say "  $mode $frames frames: peak ${PEAK} KB  rc=$RC  built=${built:-?} series=${series:-?} points=${points:-?} markers=${markers:-?}"
-            if [ "$RC" -ne 0 ]; then
+            if [ "$MEASURED" -eq 0 ]; then
+                say "FAIL: $mode/$frames produced no RSS measurement (exit $RC) — the instrument failed, not necessarily the program"
+                bad=1
+            elif [ "$RC" -ne 0 ]; then
                 say "FAIL: $mode/$frames exited $RC — a run that dies under the ${VCAP} KB cap is the runaway this gate exists to catch"
                 bad=1
             fi

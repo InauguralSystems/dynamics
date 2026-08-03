@@ -27,6 +27,7 @@ RUN apt-get update \
         ca-certificates \
         git \
         libsdl2-2.0-0 \
+        python3 \
         xvfb \
  && rm -rf /var/lib/apt/lists/*
 

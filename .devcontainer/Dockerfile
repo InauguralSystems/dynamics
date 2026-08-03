@@ -13,6 +13,12 @@
 # source tree stays at /opt/eigenscript with src/ on PATH (the Tidepool
 # devcontainer pattern).
 #
+# The mouse + render-decode oracle (tests/test_orbit_mouse.sh) additionally
+# needs xdotool to drive real input, xwd to grab the window (it ships in
+# x11-apps, NOT x11-utils) and PIL to decode the grab. Each is a hard
+# dependency: the harness exits 2 = SKIP when one is missing, and CI treats
+# a skip as a failure so the oracle can never be silently dropped.
+#
 # The same image backs Codespaces AND CI (.github/workflows/test.yml runs the
 # suite inside it via devcontainers/ci), so "green in my Codespace" and "green
 # in CI" can't drift. Building from source (rather than FROM a published
@@ -28,7 +34,10 @@ RUN apt-get update \
         git \
         libsdl2-2.0-0 \
         python3 \
+        python3-pil \
+        x11-apps \
         xauth \
+        xdotool \
         xvfb \
  && rm -rf /var/lib/apt/lists/*
 

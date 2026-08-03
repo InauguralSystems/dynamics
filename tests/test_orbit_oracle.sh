@@ -82,3 +82,47 @@ if cmp -s "$TMP/fault.txt" "$TMP/ui.txt"; then
     exit 1
 fi
 echo "PASS: planted fault (zeta=0.16) is caught by the checker"
+
+# Slice 2 — pan/zoom is VIEW STATE ONLY. Same run again with the view
+# panned, zoomed (both clamps) and reset on every frame: the trajectory
+# must be byte-identical still. This is what stops an interaction from
+# leaking into the math.
+echo "--- UI-stepped trajectory with the view panned/zoomed every frame ---"
+ORBIT_ZETA=$ZETA ORBIT_FRAMES=$FRAMES ORBIT_OUT="$TMP/ui_pan.txt" \
+    $XVFB "$EIGS" tests/orbit_ui_pan_dump.eigs > /dev/null
+[ -s "$TMP/ui_pan.txt" ] || { echo "FAIL: pan/zoom UI dump is empty"; exit 1; }
+PL=$(wc -l < "$TMP/ui_pan.txt")
+[ "$PL" -eq "$WANT" ] || { echo "FAIL: pan/zoom UI dump has $PL lines, want $WANT"; exit 1; }
+if ! cmp "$TMP/headless.txt" "$TMP/ui_pan.txt"; then
+    echo "FAIL: panning/zooming perturbed the trajectory — the view is not display-only."
+    echo "      First differing lines:"
+    diff "$TMP/headless.txt" "$TMP/ui_pan.txt" | head -10
+    exit 1
+fi
+echo "PASS: pan/zoom on every frame leaves the trajectory byte-identical ($WANT lines)"
+
+# Slice 2 — the INTERACTIVE path bounds its trajectory history. The
+# headless half of this invariant (and its planted fault) is
+# tests/test_orbit_hist.sh; this leg pins the wiring through the real
+# window: run_session's interactive branch must set the cap, and the
+# trim must actually fire on the live per-frame path.
+echo "--- interactive-session history bound (real window) ---"
+$XVFB env ORBIT_OUT="$TMP/hist.txt" "$EIGS" tests/orbit_hist_ui.eigs > /dev/null
+[ -s "$TMP/hist.txt" ] || { echo "FAIL: interactive history probe wrote nothing"; exit 1; }
+cat "$TMP/hist.txt"
+hfield() { grep -E "^$1 " "$TMP/hist.txt" | awk '{print $2}'; }
+WIRED=$(hfield WIRED_CAP); HCAP=$(hfield HIST_CAP)
+PLEN=$(hfield LEN); PCAP=$(hfield CAP); PFRAME=$(hfield FRAME)
+if [ "$WIRED" != "$HCAP" ] || [ "$HCAP" -le 0 ]; then
+    echo "FAIL: interactive run_session wired cap=$WIRED, want HIST_CAP=$HCAP — history is unbounded in a real session"
+    exit 1
+fi
+if [ "$PLEN" -gt $((PCAP * 2)) ]; then
+    echo "FAIL: live history reached $PLEN points at frame $PFRAME (bound $((PCAP * 2))) — the trim never fired"
+    exit 1
+fi
+if [ "$PLEN" -ge "$PFRAME" ]; then
+    echo "FAIL: live history ($PLEN points) grew with the frame count ($PFRAME) — the trim never fired"
+    exit 1
+fi
+echo "PASS: interactive session caps history at HIST_CAP=$HCAP; live size $PLEN points after $PFRAME frames"

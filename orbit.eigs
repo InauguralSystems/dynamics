@@ -688,23 +688,18 @@ define _build(zeta) as:
 # dumps its trajectory, so it keeps every point (cap 0).
 # ---- the window entry point ------------------------------------------
 #
-# WHY THIS TURNS OFF ASSIGNMENT HISTORY. `record_history of 0` is the
-# runtime's documented control for per-assignment temporal history — the
-# append-only table `prev of x` and `<kw> is x at <line>` read. The
-# compiler arms that table for the WHOLE PROGRAM as soon as it sees a
-# `prev of` anywhere in the source, including in a function that is
-# never called; physics.eigs has exactly one, in the `frame_velocity`
-# demo, which this window never invokes. The table is append-only with
-# no cap and it holds a REFERENCE to every assigned value, so an
-# unbounded loop over it — a 60 fps render — grows without bound: the
-# bifurcation view measured 3.9 MB per frame, 859 MB by frame 300, and
-# then died on the memory cap. Minimal repro and the upstream issue:
-# EigenScript#827 (F-DYN-13). A lab window asks no temporal questions,
-# so it opts out for the lifetime of the session and restores the
-# previous setting on the way out; the observer predicates the side
-# panel shows are live slot reads and are NOT affected.
+# This used to call `record_history of 0` for the lifetime of a session,
+# because the runtime armed its per-assignment temporal history for the
+# WHOLE PROGRAM on sighting one `prev of` anywhere — physics.eigs has
+# exactly one, in the never-called `frame_velocity` demo — and the table
+# was append-only with no cap, so a 60 fps render grew without bound
+# (3.9 MB/frame here; F-DYN-13, EigenScript#827). EigenScript#829, in
+# v0.35.1, bounds that table by program TEXT and arms it per NAME, so
+# neither half of the problem exists any more and the opt-out is gone.
+# Removing it moved peak RSS by nothing measurable (134 MB either way at
+# 30 / 100 / 300 frames); tests/test_bif_mem.sh is what keeps that
+# honest, on every run.
 define _run(zeta, frames, out_path, mode, ticks) as:
-    local hist_was is record_history of 0
     _app.sim is new_sim of zeta
     if frames < 0:
         _app.sim.cap is HIST_CAP
@@ -726,7 +721,6 @@ define _run(zeta, frames, out_path, mode, ticks) as:
     gfx_open of [WIN_W, WIN_H, "dynamics - orbit lab"]
     ui.app_loop of [root, _on_key, _tick]
     gfx_close of null
-    record_history of hist_was
     return null
 
 define run_session(zeta, frames, out_path) as:

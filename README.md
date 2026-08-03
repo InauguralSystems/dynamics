@@ -132,14 +132,19 @@ is untouched):
   by two planted faults. This is not decoration: the first working build of
   this view grew **3.9 MB per frame** and died at 859 MB, and every correctness
   oracle stayed green the whole time. The cause was a runtime bug, not the
-  sweep — see FINDINGS F-DYN-13 / EigenScript#827.
+  sweep — see FINDINGS F-DYN-13 / EigenScript#827, fixed upstream in v0.35.1.
+  That fix retired one of the planted faults (the bug it recreated no longer
+  reproduces), so the fault was re-pointed at a per-frame retention leak rather
+  than dropped: a gate validated by one fewer fault is a gate that has quietly
+  stopped discriminating.
 
 Forcing-function findings (runtime gaps surfaced while building) are logged in
 [FINDINGS.md](FINDINGS.md) — most have graduated to upstream fixes
 (#255/#256/#280/#375, and #819/#820 which closed the two lib/ui plot gaps);
 a calling-convention edge remains open, and building this rung surfaced two
 more: EigenScript#827 (unbounded temporal assignment history — the one that
-froze a box) and #828 (chart render allocation).
+froze a box, fixed by #829 and shipped in v0.35.1, the pin this repo runs) and
+#828 (chart render allocation).
 
 ## Develop locally
 

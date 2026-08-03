@@ -269,12 +269,20 @@ non-numeric coercion of the same builtin, and its "non-findings" note that
 `prev` works "provided `record_history` is never called" is now qualified —
 `prev` works, and arms an unbounded table for the whole program while doing it.
 
-**In this repo:** `orbit.eigs`'s `_run` calls the documented `record_history of 0`
-for the lifetime of a window session (a lab window asks no temporal questions)
-and restores the previous setting on exit. `tests/test_bif_mem.sh` carries a
-planted fault that removes that call and must go red, so when #827 lands the
-opt-out can come out and the gate still holds. For
-`eigenscript-runtime-engineer` / `eigenscript-trace-tape-engineer`.
+**FIXED upstream** by EigenScript#829, shipped in **v0.35.1** (the pin this repo
+now carries): the history table is bounded by program TEXT — entries no backward
+query can reach are pruned at append time — and arming is per NAME instead of
+whole-program, so `physics.eigs`'s dead-code `prev of` arms nothing here.
+
+**In this repo:** `orbit.eigs`'s `_run` used to call `record_history of 0` for
+the lifetime of a window session and restore it on exit; that opt-out is gone
+(dynamics#24). Removing it changed peak RSS by nothing measurable — 134.3 /
+134.5 / 134.4 MB with it, 134.7 / 134.3 / 134.4 MB without, at 30 / 100 / 300
+frames. The same tree with history explicitly ON measures 304 MB at 30 frames
+and 674 MB at 100 on v0.35.0, and 134.5 / 134.9 / 134.8 MB flat on v0.35.1 —
+which is why `tests/test_bif_mem.sh`'s planted fault 1 could no longer be
+planted and was re-pointed at a per-frame retention fault instead of deleted.
+For `eigenscript-runtime-engineer` / `eigenscript-trace-tape-engineer`.
 
 ## F-DYN-14 — lib/ui: `chart` allocates a list per plotted point per frame → upstream EigenScript#828
 

@@ -1,0 +1,51 @@
+# Bounded-history check (dynamics#20 rung 1, slice 2). Headless — no
+# window, no gfx builtins — so it runs on every build.
+#
+# `sim.pts` used to grow forever, which an interactive session (runs
+# until Escape) turns into a silent ~20 MB/hour climb. The fix is a
+# per-sim cap that the interactive path sets and the dump path must NOT:
+# traj_text needs the whole trajectory and the byte-identical oracle is
+# built on it. This asserts BOTH halves, and that trimming is
+# display-only — the retained points are the tail of the full run,
+# byte-for-byte through the same traj_line the oracle formats with.
+import orbit
+
+FRAMES is 5000
+
+# 1. dump path — cap 0 (the default): every point is kept.
+full is orbit.new_sim of 0.15
+f is 0
+loop while f < FRAMES:
+    orbit.frame_advance of full
+    f is f + 1
+print of f"FULL_LEN {len of full.pts}"
+
+# 2. interactive path — cap set: storage stays bounded.
+trimmed is orbit.new_sim of 0.15
+trimmed.cap is orbit.HIST_CAP
+g is 0
+loop while g < FRAMES:
+    orbit.frame_advance of trimmed
+    g is g + 1
+print of f"TRIMMED_LEN {len of trimmed.pts}"
+print of f"BOUND {orbit.HIST_CAP * 2}"
+print of f"TRAIL {orbit.TRAIL}"
+print of f"FRAMES {FRAMES}"
+
+# 3. the trim is display-only: what is retained is exactly the tail of
+# the uncapped run, and it still covers the full draw window.
+n is len of trimmed.pts
+tail is list_slice of [full.pts, (len of full.pts) - n, len of full.pts]
+same is 1
+i is 0
+loop while i < n:
+    if (orbit.traj_line of (trimmed.pts[i])) != (orbit.traj_line of (tail[i])):
+        same is 0
+    i is i + 1
+print of f"TAIL_MATCH {same}"
+
+# 4. the two runs advanced the same simulation: same frame count, same
+# current state (the cap must not perturb the math).
+print of f"FRAME_EQ {full.frame == trimmed.frame}"
+print of f"STATE_EQ {(orbit.traj_line of (full.state)) == (orbit.traj_line of (trimmed.state))}"
+print of "HIST-CHECK-OK"

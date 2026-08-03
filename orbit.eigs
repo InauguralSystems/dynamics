@@ -27,6 +27,15 @@
 # the live phase portrait (x horizontal, v vertical), a zeta slider,
 # pause/resume, and the observer's live regime forecasts for energy and
 # displacement (report of — the observer IS the instrument).
+#
+# Slice 2 adds pan/zoom (drag the plot, wheel to zoom, `r`/button to
+# reset) and bounds the interactive trajectory history. Both are
+# DISPLAY-ONLY by construction: the view section below never writes
+# simulation state, and the history bound is applied only in the
+# interactive path — auto/dump mode keeps the full trajectory, which the
+# byte-identical oracle depends on. tests/orbit_ui_pan_dump.eigs pins
+# that: it pans and zooms EVERY frame of an auto run and the dump must
+# still be byte-identical to the headless reference.
 
 load_file of "physics.eigs"
 import ui
@@ -39,17 +48,40 @@ DEFAULT_ZETA is 0.15
 WIN_W is 680
 WIN_H is 470
 
-# World window of the phase portrait: x and v both span [-RANGE, RANGE].
+# Default world window of the phase portrait at zoom 1: x and v both
+# span [-RANGE, RANGE]. Pan/zoom moves the view off this default; see
+# the view section below.
 RANGE is 1.5
 
 # How many trail points the canvas draws (the dump keeps ALL points;
 # the draw window is display-only and cannot perturb the trajectory).
 TRAIL is 600
 
+# Canvas geometry (window coordinates). Constants rather than reads off
+# the widget so the view math works before the window exists — the
+# headless view tests drive pan/zoom with no widget tree at all.
+CANVAS_X is 12
+CANVAS_Y is 12
+CANVAS_W is 436
+CANVAS_H is 446
+
+# Interactive history bound. `sim.pts` used to grow forever: an
+# interactive session runs until Escape, so at 60 fps it accumulated
+# ~3,600 two-element lists a minute (order 20 MB/hour) — a slow silent
+# climb, exactly what the constrained-machine discipline exists to
+# catch. `sim.cap` is that bound, in points; 0 means UNBOUNDED and
+# auto/dump mode MUST keep it that way (traj_text needs the whole
+# trajectory and the byte-identical oracle is built on it). The trim
+# runs in chunks — only once the list has grown to 2x the cap — so the
+# amortised per-frame cost stays O(1) instead of copying every frame,
+# and the last HIST_CAP points (a full draw window, TRAIL + 1) are
+# always present.
+HIST_CAP is TRAIL + 1
+
 # ---- simulation state (shared by headless and UI paths) --------------
 
 define new_sim(zeta) as:
-    return {"zeta": zeta, "state": [1.0, 0.0], "pts": [[1.0, 0.0]], "frame": 0}
+    return {"zeta": zeta, "state": [1.0, 0.0], "pts": [[1.0, 0.0]], "frame": 0, "cap": 0}
 
 # Advance ONE frame: SUB unobserved substeps of the core's step —
 # exactly the specimen's cadence. Appends the frame state to sim.pts.
@@ -63,6 +95,10 @@ define frame_advance(sim) as:
             sub_i is sub_i + 1
     sim.state is cur
     append of [sim.pts, cur]
+    # History bound — display path only (sim.cap > 0). Never reached in
+    # auto/dump mode, whose cap is 0.
+    if sim.cap > 0 and (len of sim.pts) >= (sim.cap * 2):
+        sim.pts is list_slice of [sim.pts, (len of sim.pts) - sim.cap, len of sim.pts]
     sim.frame is sim.frame + 1
     return sim
 
@@ -100,7 +136,9 @@ _app is {
     "lbl_e": null,
     "lbl_x": null,
     "lbl_z": null,
-    "btn_pause": null
+    "lbl_v": null,
+    "btn_pause": null,
+    "hook": null
 }
 
 # Observer readout bindings: module globals so the observer window
@@ -109,25 +147,114 @@ _app is {
 _obs_energy is 0.0
 _obs_x is 0.0
 
+# ---- view state: pan / zoom (DISPLAY ONLY) ---------------------------
+#
+# cx/cy are the world coordinates at the centre of the canvas and `half`
+# is the world half-width (and half-height) it spans; zoom 1 is
+# half = RANGE. Nothing in this section reads or writes simulation
+# state — that is the invariant tests/orbit_ui_pan_dump.eigs pins by
+# panning and zooming every frame of an oracle run.
+MIN_HALF is 0.02
+MAX_HALF is 50.0
+ZOOM_STEP is 1.25
+
+_view is {"cx": 0.0, "cy": 0.0, "half": RANGE}
+
+# Pointer bookkeeping for the canvas gestures. `_drag` holds the view
+# centre at the moment the drag started, so a pan is computed from the
+# press point rather than accumulated per motion event (no drift).
+# `_ptr` is the last pointer position seen over the canvas: the wheel
+# event carries scroll deltas but NO cursor position (F-DYN-11), so
+# cursor-anchored zoom has to remember where the pointer was.
+_drag is {"active": 0, "mx": 0, "my": 0, "cx": 0.0, "cy": 0.0}
+_ptr is {"x": CANVAS_X + (CANVAS_W / 2), "y": CANVAS_Y + (CANVAS_H / 2)}
+
+define _view_label_text() as:
+    local z is RANGE / _view.half
+    return f"zoom x{(floor of (z * 100.0)) / 100.0}"
+
+define _sync_view_label() as:
+    if _app.lbl_v != null:
+        _app.lbl_v.text is _view_label_text of []
+    return null
+
+# Reset to the default world window.
+define reset_view() as:
+    _view.cx is 0.0
+    _view.cy is 0.0
+    _view.half is RANGE
+    _sync_view_label of []
+    return null
+
+# Pan by a pixel delta, content-follows-cursor (drag right moves the
+# world right, so the view centre moves left).
+define pan_by(dx_px, dy_px) as:
+    _view.cx is _view.cx - dx_px * (2.0 * _view.half / CANVAS_W)
+    _view.cy is _view.cy + dy_px * (2.0 * _view.half / CANVAS_H)
+    _sync_view_label of []
+    return null
+
+# Zoom by `f` (>1 zooms in) about a point in WINDOW coordinates: the
+# world point under (px, py) stays under (px, py).
+define zoom_at(f, px, py) as:
+    local wx is _view.cx - _view.half + (px - CANVAS_X) * (2.0 * _view.half / CANVAS_W)
+    local wv is _view.cy + _view.half - (py - CANVAS_Y) * (2.0 * _view.half / CANVAS_H)
+    local nh is _view.half / f
+    if nh < MIN_HALF:
+        nh is MIN_HALF
+    if nh > MAX_HALF:
+        nh is MAX_HALF
+    _view.half is nh
+    _view.cx is wx + nh - (px - CANVAS_X) * (2.0 * nh / CANVAS_W)
+    _view.cy is wv - nh + (py - CANVAS_Y) * (2.0 * nh / CANVAS_H)
+    _sync_view_label of []
+    return null
+
+# Zoom about the centre of the canvas.
+define zoom_by(f) as:
+    return zoom_at of [f, CANVAS_X + (CANVAS_W / 2), CANVAS_Y + (CANVAS_H / 2)]
+
 # ---- phase-portrait canvas (reads colours from orbit_theme) ----------
 
 define _px(w, ax, xval) as:
-    return ax + (floor of ((xval + RANGE) / (2.0 * RANGE) * w.w))
+    return ax + (floor of ((xval - _view.cx + _view.half) / (2.0 * _view.half) * w.w))
 
 define _py(w, ay, vval) as:
-    return ay + (floor of ((RANGE - vval) / (2.0 * RANGE) * w.h))
+    return ay + (floor of ((_view.cy + _view.half - vval) / (2.0 * _view.half) * w.h))
+
+# World-grid spacing that keeps roughly 4-12 lines across the view at
+# any zoom (a fixed 0.5 would be one line when zoomed in and hundreds
+# when zoomed out).
+define _grid_step() as:
+    local s is 0.5
+    loop while (2.0 * _view.half / s) > 12.0:
+        s is s * 2.0
+    loop while (2.0 * _view.half / s) < 4.0:
+        s is s / 2.0
+    return s
 
 define _paint_phase(w, ax, ay) as:
     local c is orbit_theme.OL_COLORS
+    # Clip everything to the plot rect. With pan/zoom a world point can
+    # map outside the canvas, and lib/ui does not clip a widget's own
+    # drawing (F-DYN-12) — without this the trail draws over the control
+    # column.
+    gfx_clip of [ax, ay, w.w, w.h]
     gfx_rect of [ax, ay, w.w, w.h, c.plot_bg[0], c.plot_bg[1], c.plot_bg[2]]
-    # world grid every 0.5 units
-    local g is 0.0 - 1.0
-    loop while g <= 1.0:
+    # world grid, adaptive step, over the visible window
+    local st is _grid_step of []
+    local gmax is _view.cx + _view.half
+    local g is (floor of ((_view.cx - _view.half) / st)) * st
+    loop while g <= gmax:
         local gx is _px of [w, ax, g]
-        local gy is _py of [w, ay, g]
         gfx_line of [gx, ay, gx, ay + w.h - 1, c.plot_grid[0], c.plot_grid[1], c.plot_grid[2]]
+        g is g + st
+    local hmax is _view.cy + _view.half
+    local hv is (floor of ((_view.cy - _view.half) / st)) * st
+    loop while hv <= hmax:
+        local gy is _py of [w, ay, hv]
         gfx_line of [ax, gy, ax + w.w - 1, gy, c.plot_grid[0], c.plot_grid[1], c.plot_grid[2]]
-        g is g + 0.5
+        hv is hv + st
     # axes x = 0 and v = 0
     local ox is _px of [w, ax, 0.0]
     local oy is _py of [w, ay, 0.0]
@@ -151,6 +278,44 @@ define _paint_phase(w, ax, ay) as:
         # current state
         local cur is sim.state
         gfx_circle of [(_px of [w, ax, cur[0]]), (_py of [w, ay, cur[1]]), 3, c.plot_head[0], c.plot_head[1], c.plot_head[2]]
+    gfx_clip of null
+    return null
+
+# ---- canvas gestures: drag to pan, wheel to zoom ---------------------
+#
+# The canvas is lib/ui's custom-widget escape hatch: mousedown arrives
+# through the registry, hover mousemoves through on_mouse, and — once
+# claim_drag has taken the pointer — every drag mousemove plus the
+# terminating mouseup. Wheel needs the separate on_wheel field.
+
+define _on_canvas_mouse(w, ev) as:  # lint: allow W002 -- lib/ui's on_mouse signature
+    if ev.type == "mousedown":
+        _drag.active is 1
+        _drag.mx is ev.x
+        _drag.my is ev.y
+        _drag.cx is _view.cx
+        _drag.cy is _view.cy
+        ui.claim_drag of w
+        return null
+    if ev.type == "mousemove":
+        _ptr.x is ev.x
+        _ptr.y is ev.y
+        if _drag.active == 1:
+            _view.cx is _drag.cx - (ev.x - _drag.mx) * (2.0 * _view.half / CANVAS_W)
+            _view.cy is _drag.cy + (ev.y - _drag.my) * (2.0 * _view.half / CANVAS_H)
+            _sync_view_label of []
+        return null
+    if ev.type == "mouseup":
+        _drag.active is 0
+        ui.release_drag of null
+        return null
+    return null
+
+define _on_canvas_wheel(w, ev) as:  # lint: allow W002 -- lib/ui's on_wheel signature
+    if ev.y > 0:
+        return zoom_at of [ZOOM_STEP, _ptr.x, _ptr.y]
+    if ev.y < 0:
+        return zoom_at of [1.0 / ZOOM_STEP, _ptr.x, _ptr.y]
     return null
 
 # ---- widget callbacks ------------------------------------------------
@@ -168,10 +333,15 @@ define _on_pause(w) as:
     _app.paused is w.value
     return null
 
+define _on_reset(w) as:  # lint: allow W002 -- lib/ui's on_click signature
+    return reset_view of []
+
 define _on_key(ev) as:
     if ev.type == "keydown":
         if ev.key == "escape":
             return 0
+        if ev.key == "r":
+            reset_view of []
         if ev.key == "space":
             if _app.paused == 1:
                 _app.paused is 0
@@ -193,8 +363,19 @@ define _tick(root) as:  # lint: allow W002 -- ui.app_loop's on_tick signature
         _obs_x is _app.sim.state[0]
         local er is report of _obs_energy
         local xr is report of _obs_x
-        _app.lbl_e.text is f"energy : {er}"
-        _app.lbl_x.text is f"x      : {xr}"
+        _app.lbl_e.text is f"E : {er}"
+        _app.lbl_x.text is f"x : {xr}"
+    # Per-frame test seam: the view-perturbation oracle
+    # (tests/orbit_ui_pan_dump.eigs) drives pan/zoom from here so an
+    # auto run exercises the real view code every frame. A hook that
+    # touched the simulation would break the byte-identical dump, which
+    # is exactly what that test is for.
+    if _app.hook != null:
+        _app.hook of _app.sim
+    return null
+
+define set_frame_hook(fn) as:
+    _app.hook is fn
     return null
 
 # ---- window construction (theme applied BEFORE widgets) --------------
@@ -202,13 +383,14 @@ define _tick(root) as:  # lint: allow W002 -- ui.app_loop's on_tick signature
 define _build(zeta) as:
     orbit_theme.orbit_theme_apply of []
     local root is ui.panel of ["root", 0, 0, WIN_W, WIN_H]
-    local cv is ui.canvas of ["phase", 12, 12, 436, 446, _paint_phase, null]
+    local cv is ui.canvas of ["phase", CANVAS_X, CANVAS_Y, CANVAS_W, CANVAS_H, _paint_phase, _on_canvas_mouse]
+    cv.on_wheel is _on_canvas_wheel
     ui.add_child of [root, cv]
     _app.canvas is cv
     local side is ui.panel of ["side", 460, 12, 208, 446]
     ui.add_child of [root, side]
     ui.add_child of [side, (ui.section of ["hdr", 8, 8, 192, "orbit lab"])]
-    ui.add_child of [side, (ui.label of ["sys", 8, 34, "x'' = -x - 2*zeta*x'"])]
+    ui.add_child of [side, (ui.label of ["sys", 8, 34, "x''+2z x'+x=0"])]
     local lz is ui.label of ["zl", 8, 66, "zeta"]
     ui.add_child of [side, lz]
     _app.lbl_z is lz
@@ -217,16 +399,25 @@ define _build(zeta) as:
     local bp is ui.toggle_button of ["pause", 8, 120, 192, 26, "Pause", _on_pause]
     ui.add_child of [side, bp]
     _app.btn_pause is bp
-    ui.add_child of [side, (ui.section of ["obs", 8, 168, 192, "observer forecast"])]
-    local le is ui.label of ["le", 8, 194, "energy : -"]
+    ui.add_child of [side, (ui.button of ["reset", 8, 152, 192, 26, "Reset view", _on_reset])]
+    local lv is ui.label of ["lv", 8, 186, "zoom x1"]
+    ui.add_child of [side, lv]
+    _app.lbl_v is lv
+    ui.add_child of [side, (ui.section of ["obs", 8, 216, 192, "observer forecast"])]
+    local le is ui.label of ["le", 8, 242, "E : -"]
     ui.add_child of [side, le]
     _app.lbl_e is le
-    local lx is ui.label of ["lx", 8, 214, "x      : -"]
+    local lx is ui.label of ["lx", 8, 262, "x : -"]
     ui.add_child of [side, lx]
     _app.lbl_x is lx
-    ui.add_child of [side, (ui.label of ["eq", 8, 246, "equilibrium (0,0) marked red"])]
-    ui.add_child of [side, (ui.label of ["keys", 8, 276, "space pause - esc quit"])]
+    ui.add_child of [side, (ui.label of ["eq", 8, 294, "equilibrium: red"])]
+    ui.add_child of [side, (ui.label of ["k1", 8, 324, "drag: pan"])]
+    ui.add_child of [side, (ui.label of ["k2", 8, 344, "wheel: zoom"])]
+    ui.add_child of [side, (ui.label of ["k3", 8, 364, "r: reset view"])]
+    ui.add_child of [side, (ui.label of ["k4", 8, 384, "space: pause"])]
+    ui.add_child of [side, (ui.label of ["k5", 8, 404, "esc: quit"])]
     _on_zeta_change of sl
+    _sync_view_label of []
     return root
 
 # ---- entry points ----------------------------------------------------
@@ -234,11 +425,17 @@ define _build(zeta) as:
 # frames < 0: interactive until Escape / close. frames >= 0: advance
 # exactly `frames` frames through the REAL window + draw path, dump the
 # trajectory to out_path, quit (the oracle's UI-stepped run).
+#
+# The history bound is applied ONLY to the interactive path: an auto run
+# dumps its trajectory, so it keeps every point (cap 0).
 define run_session(zeta, frames, out_path) as:
     _app.sim is new_sim of zeta
+    if frames < 0:
+        _app.sim.cap is HIST_CAP
     _app.auto_frames is frames
     _app.out_path is out_path
     _app.paused is 0
+    reset_view of []
     local root is _build of zeta
     gfx_open of [WIN_W, WIN_H, "dynamics - orbit lab"]
     ui.app_loop of [root, _on_key, _tick]

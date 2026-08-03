@@ -1,0 +1,40 @@
+# Interactive-path history probe (dynamics#20 rung 1, slice 2): opens
+# the REAL orbit-lab window in INTERACTIVE mode (the frames < 0 path an
+# actual session runs) and reports (a) the cap run_session wired up —
+# which must be orbit.HIST_CAP, the interactive bound — and (b) the live
+# history size after the trim has actually fired through the real
+# per-frame path. tests/test_orbit_oracle.sh asserts both.
+#
+# HIST_CAP is a full draw window (601 points), so reaching its first
+# trim through a 60 fps window costs ~40 s of wall clock. The probe
+# therefore records the wired cap and then narrows it to SMALL_CAP: the
+# mechanism exercised is the same one, at a frame count CI can afford.
+# The bound itself, at the real cap, is proven headlessly in
+# tests/test_orbit_hist.sh.
+#
+# The per-frame hook is orbit's test seam; apart from the cap narrowing
+# it only READS the sim.
+import orbit
+import ui
+
+SMALL_CAP is 40
+STOP is SMALL_CAP * 3
+
+probe is {"wired_cap": 0 - 1, "len": 0, "cap": 0, "frame": 0}
+
+define watch(sim) as:
+    if probe.wired_cap < 0:
+        probe.wired_cap is sim.cap
+        sim.cap is SMALL_CAP
+    if sim.frame >= STOP:
+        probe.len is len of sim.pts
+        probe.cap is sim.cap
+        probe.frame is sim.frame
+        ui.request_quit of null
+    return null
+
+orbit.set_frame_hook of watch
+orbit.run of []
+
+write_text of [(env_get of "ORBIT_OUT"), f"WIRED_CAP {probe.wired_cap}\nLEN {probe.len}\nCAP {probe.cap}\nFRAME {probe.frame}\nHIST_CAP {orbit.HIST_CAP}\n"]
+print of "HIST-UI-OK"

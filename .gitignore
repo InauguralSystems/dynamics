@@ -5,3 +5,4 @@ eigs.lock.json
 # Editor + OS noise
 *.swp
 .DS_Store
+__pycache__/

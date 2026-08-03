@@ -1,0 +1,35 @@
+# Oracle half 2b (dynamics#20 rung 1, slice 2): the UI-stepped
+# trajectory again — but with the VIEW perturbed on every single frame.
+# Pan, zoom in, zoom out, both zoom clamps, and reset all run through
+# the same public view API the mouse gestures drive, while the real
+# window redraws the real phase portrait through the real projection.
+#
+# The dump must still be byte-identical to the headless reference:
+# pan/zoom is view state ONLY. If this dump diverges from the plain
+# UI-stepped one, an interaction has leaked into the simulation.
+import orbit
+
+z is num of (env_get of "ORBIT_ZETA")
+frames is num of (env_get of "ORBIT_FRAMES")
+out is env_get of "ORBIT_OUT"
+
+tick is {"n": 0}
+
+define perturb(sim) as:  # lint: allow W002 -- orbit's frame-hook signature
+    tick.n is tick.n + 1
+    orbit.pan_by of [3, 0 - 2]
+    if (tick.n % 7) == 0:
+        orbit.zoom_at of [1.25, 100, 90]
+    if (tick.n % 11) == 0:
+        orbit.zoom_at of [0.8, 300, 200]
+    if (tick.n % 53) == 26:
+        orbit.zoom_at of [1000.0, 60, 400]     # clamps at MIN_HALF
+    if (tick.n % 53) == 40:
+        orbit.zoom_at of [0.001, 400, 60]      # clamps at MAX_HALF
+    if (tick.n % 53) == 0:
+        orbit.reset_view of []
+    return null
+
+orbit.set_frame_hook of perturb
+orbit.run_auto of [z, frames, out]
+print of "UI-PAN-DUMP-OK"

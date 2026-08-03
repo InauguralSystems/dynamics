@@ -184,6 +184,44 @@ xy chart existed today, it could not have taken the orbit-lab palette. Wants
 theme keys (e.g. `plot_bg`, `plot_grid`, `plot_border`) read at render time.
 For `eigenscript-ui-toolkit-engineer`.
 
+## F-DYN-11 — lib/ui gap: the wheel event carries no cursor position
+
+`ev.x` / `ev.y` on a `wheel` event are the scroll **deltas** (#569), and the
+event dict carries nothing else positional — `src/ext_gfx.c` never puts the
+pointer location on it. `dispatch` knows where the pointer is (it hit-tests
+with `_ui.last_mouse_x` / `_ui.last_mouse_y`), but `_ui` is private, so a
+consumer cannot read it. Any widget wanting **cursor-anchored zoom** — the
+universal convention for a map, a plot or a canvas — therefore has to shadow
+the pointer itself by recording every hover `mousemove` through `on_mouse`,
+and is wrong for any wheel that arrives before the first motion event
+(orbit.eigs defaults `_ptr` to the canvas centre for exactly that window).
+Wants either the pointer position on the wheel event dict (SDL has it at
+event time) or a public `ui.pointer of null`. For
+`eigenscript-ui-toolkit-engineer`.
+
+## F-DYN-12 — lib/ui ergonomics: `canvas` does not clip its own `on_paint`
+
+`_render_canvas` calls `widget.on_paint` with the widget's absolute origin and
+nothing else — no clip rectangle. Several other widgets set one around their
+body (`ui_w_data`'s table/code_view, `ui_w_container`'s scroll panel,
+`ui_w_viz`'s waveform view all `gfx_clip` then `gfx_clip of null`), so the
+absence here is easy to read as "the canvas is clipped like everything else".
+It is not, and the canvas is precisely the widget whose geometry is
+data-dependent: the moment the orbit lab gained pan/zoom, trail segments
+mapped outside the plot rect and painted straight over the control column.
+The fix inside `_paint_phase` is two lines, but it has to be *known about* —
+nothing fails loudly, the drawing just lands on a neighbour. The same class
+bit the chrome in the other direction and was only caught by driving the real
+window: a plain `panel` does not clip its children either, so every side-panel
+`label` whose text exceeded the panel width ran off the edge of the *window*
+and was silently truncated mid-word ("energy : converge", "drag pan - wheel
+z"). No API reports the overflow and no test could see it — a screenshot did.
+The labels are now sized to the column by hand. Proposal: have
+`_render_canvas` wrap `on_paint` in the widget's clip (an escape hatch that
+still cannot corrupt the rest of the tree), or say so in the `canvas` doc
+comment next to the `on_mouse` / `on_wheel` notes. For
+`eigenscript-ui-toolkit-engineer`.
+
 ---
 
 ## Non-findings (verified working — recorded to avoid re-investigating)

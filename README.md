@@ -71,6 +71,20 @@ forcing functions), each exercising a different observer sub-surface:
   Gauss-Seidel converges in fewer iterations than Jacobi under the *same* idiom;
   PageRank's oscillatory residual needs the debounce. Run: `eigenscript solve.eigs`.
 
+- **orbit lab** (`orbit_main.eigs`) — **built** (fleet UI ladder rung 1,
+  [#20](https://github.com/InauguralSystems/dynamics/issues/20)). A themed
+  lib/ui window over the *unmodified* `physics.eigs` core: live phase portrait
+  of the damped oscillator (analytic equilibrium at the origin, marked), a ζ
+  slider, pause/resume, and the observer's live regime forecasts for energy
+  and displacement. The UI is a **pure reader** of the simulation —
+  `tests/test_orbit_oracle.sh` byte-diffs a headless run against a UI-stepped
+  run of the same system (and plants a fault to prove the diff can fail).
+  Run: `eigenscript orbit_main.eigs` (needs a gfx-capable build: `make gfx`
+  in the EigenScript repo). Palette lives in `orbit_theme.eigs`
+  (DeslanStudio in-place theme-apply pattern).
+
+![orbit lab window](docs/orbit-lab.png)
+
 Forcing-function findings (runtime gaps surfaced while building) are logged in
 [FINDINGS.md](FINDINGS.md) — most have graduated to upstream fixes
 (#255/#256/#280/#375); a calling-convention edge remains open.
@@ -80,10 +94,12 @@ Forcing-function findings (runtime gaps surfaced while building) are logged in
 ```sh
 eigenscript dynamics.eigs            # parse + run the entry point
 bash tests/test_smoke.sh             # stage as a consumer would and import
+bash tests/test_orbit_oracle.sh      # UI oracle: headless vs UI-stepped byte-diff
 ```
 
-CI builds EigenScript from source on Linux and runs the smoke and lab test scripts
-on every push and PR (see `.github/workflows/test.yml`).
+CI builds EigenScript from source on Linux (the gfx variant, under Xvfb) and runs
+the smoke, lab, and orbit-oracle test scripts on every push and PR (see
+`.github/workflows/test.yml`).
 
 ## Publish
 

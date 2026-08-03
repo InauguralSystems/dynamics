@@ -1,0 +1,11 @@
+# Oracle half 1: the HEADLESS reference trajectory. Same zeta/frames as
+# tests/orbit_ui_dump.eigs; tests/test_orbit_oracle.sh byte-diffs the
+# two dumps. Params come from env so the harness owns them.
+import orbit
+
+z is num of (env_get of "ORBIT_ZETA")
+frames is num of (env_get of "ORBIT_FRAMES")
+out is env_get of "ORBIT_OUT"
+
+write_text of [out, (orbit.run_headless of [z, frames])]
+print of "HEADLESS-DUMP-OK"

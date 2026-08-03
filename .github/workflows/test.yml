@@ -24,5 +24,7 @@ jobs:
         uses: devcontainers/ci@v0.3
         with:
           runCmd: |
+            set -e
             EIGENSCRIPT=eigenscript bash tests/test_smoke.sh
             EIGENSCRIPT=eigenscript bash tests/test_lab.sh
+            EIGENSCRIPT=eigenscript bash tests/test_orbit_oracle.sh

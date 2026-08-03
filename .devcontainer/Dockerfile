@@ -4,6 +4,15 @@
 # runtime. This image builds EigenScript at a pinned tag and puts it on PATH,
 # so the tag below IS the version pin — bump EIGS_REF to move the runtime.
 #
+# Since the orbit-lab window (fleet UI ladder rung 1, dynamics#20) the image
+# builds the *gfx* variant (a strict superset of headless — it runs the
+# headless suite fine) and ships SDL2 + Xvfb, so the UI oracle
+# (tests/test_orbit_oracle.sh) can open the real window in CI. SDL2 is
+# dlopen'd at runtime, so building gfx needs no -dev headers — only libsdl2
+# to *run* it. The gfx binary resolves its stdlib relative to itself, so the
+# source tree stays at /opt/eigenscript with src/ on PATH (the Tidepool
+# devcontainer pattern).
+#
 # The same image backs Codespaces AND CI (.github/workflows/test.yml runs the
 # suite inside it via devcontainers/ci), so "green in my Codespace" and "green
 # in CI" can't drift. Building from source (rather than FROM a published
@@ -17,14 +26,16 @@ RUN apt-get update \
         build-essential \
         ca-certificates \
         git \
+        libsdl2-2.0-0 \
+        xvfb \
  && rm -rf /var/lib/apt/lists/*
 
-# Build + install EigenScript at the pinned tag onto /usr/local (binary on
-# PATH, stdlib at /usr/local/lib/eigenscript — found relative to the binary).
+# Full EigenScript source at the pinned tag; build the gfx variant (the
+# binary hard-links to src/eigenscript, which finds lib/ next to it).
 ARG EIGS_REF=v0.34.0
 RUN git clone --depth 1 --branch "${EIGS_REF}" \
-        https://github.com/InauguralSystems/EigenScript.git /tmp/eigs \
- && make -C /tmp/eigs install PREFIX=/usr/local CC=gcc \
- && rm -rf /tmp/eigs
+        https://github.com/InauguralSystems/EigenScript.git /opt/eigenscript \
+ && make -C /opt/eigenscript gfx CC=gcc
 
+ENV PATH="/opt/eigenscript/src:${PATH}"
 WORKDIR /workspaces/dynamics

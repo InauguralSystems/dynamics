@@ -1,0 +1,142 @@
+# THE BIFURCATION ORACLE (dynamics#20 rung 1, slice 3) — headless.
+#
+# The bifurcation view's claim is not "here is a plausible picture", it
+# is "here is the logistic map's attractor". That claim is checkable
+# against algebra, and this program does the checking; the assertions
+# and their thresholds live in tests/test_bifurcation.sh.
+#
+# It measures FOUR independent things:
+#
+#  1. THE PLOTTED DATA. Not a re-derivation — the very sweep orbit.eigs
+#     hands to the chart (same r range, same column count, same
+#     transient, same sample count). Every point in a column safely
+#     inside the period-1 window must equal 1 - 1/r, and every point in
+#     a column safely inside the period-2 window must equal one of
+#     (r+1 ± sqrt((r-3)(r+1)))/(2r) — with BOTH branch points actually
+#     visited, so a collapsed column cannot pass.
+#
+#     "Safely inside" is load-bearing and is a statement about physics,
+#     not a fudge: at a doubling the multiplier passes through magnitude
+#     1, so a column within ~1e-2 of r=3 or r=1+sqrt(6) has not settled
+#     after 600 iterations and genuinely is a blur. The margins below
+#     (r <= 2.95, 3.05 <= r <= 3.40) are where |multiplier|^600 is far
+#     under the tolerance.
+#
+#  2. THE CASCADE LOCATIONS, found by bisection on the measured period
+#     and compared against r1 = 3, r2 = 1 + sqrt(6), r3 = 3.5440903...,
+#     plus the first Feigenbaum ratio (r2-r1)/(r3-r2) = 4.7514...
+#
+#  3. THE PERIOD-3 TANGENT BIFURCATION at r = 1 + sqrt(8): the attractor
+#     must be chaotic just below it and exactly a 3-cycle just above.
+#
+#  4. A PERIOD CENSUS at five parameters, one per rung of the cascade.
+#
+# Output is one FIELD VALUE per line; the shell script asserts.
+import logistic
+
+# The window's own sweep parameters (orbit.eigs BIF_*). Duplicated here
+# rather than imported because importing orbit.eigs pulls in lib/ui and
+# a gfx front-end for what is a pure numeric check; tests/test_bifurcation.sh
+# greps orbit.eigs for these values so the duplication cannot drift.
+R_LO is 2.8
+R_HI is 4.0
+COLS is 200
+SAMPLES is 20
+TRANSIENT is 600
+
+TOL is 0.000000001          # 1e-9 — the closed-form agreement demanded
+DET_TOL is 0.0000001        # 1e-7 — the period detector's "same point"
+DET_TRANSIENT is 40000
+DET_SAMPLES is 64
+BISECT_STEPS is 20
+
+sw is logistic.sweep of [R_LO, R_HI, COLS, TRANSIENT, SAMPLES]
+print of f"SWEEP_N {len of sw.x}"
+
+# ---- 1. the plotted data against the closed forms --------------------
+
+p1_max is 0.0
+p1_cols is 0
+p2_max is 0.0
+p2_cols is 0
+p2_both is 1
+
+c is 0
+loop while c < COLS:
+    base is c * SAMPLES
+    r is sw.r[base]
+    if r <= 2.95:
+        p1_cols is p1_cols + 1
+        want is logistic.branch_p1 of r
+        k is 0
+        loop while k < SAMPLES:
+            d is abs of (sw.x[base + k] - want)
+            if d > p1_max:
+                p1_max is d
+            k is k + 1
+    elif r >= 3.05 and r <= 3.40:
+        p2_cols is p2_cols + 1
+        an is logistic.branch_p2 of r
+        hit_lo is 0
+        hit_hi is 0
+        k is 0
+        loop while k < SAMPLES:
+            v is sw.x[base + k]
+            dlo is abs of (v - an[0])
+            dhi is abs of (v - an[1])
+            d is dlo
+            if dhi < d:
+                d is dhi
+            if dlo < dhi:
+                hit_lo is 1
+            else:
+                hit_hi is 1
+            if d > p2_max:
+                p2_max is d
+            k is k + 1
+        if hit_lo == 0 or hit_hi == 0:
+            p2_both is 0
+    c is c + 1
+
+print of f"P1_COLS {p1_cols}"
+print of f"P1_MAXERR {p1_max}"
+print of f"P2_COLS {p2_cols}"
+print of f"P2_MAXERR {p2_max}"
+print of f"P2_BOTH_BRANCHES {p2_both}"
+print of f"TOL {TOL}"
+
+# ---- 2. where the doublings actually are -----------------------------
+
+m1 is logistic.doubling_point of [2, 2.9, 3.1, BISECT_STEPS, DET_TRANSIENT, DET_SAMPLES, DET_TOL]
+m2 is logistic.doubling_point of [4, 3.4, 3.5, BISECT_STEPS, DET_TRANSIENT, DET_SAMPLES, DET_TOL]
+m3 is logistic.doubling_point of [8, 3.53, 3.56, BISECT_STEPS, DET_TRANSIENT, DET_SAMPLES, DET_TOL]
+
+print of f"R1_MEAS {m1}"
+print of f"R1_ERR {abs of (m1 - logistic.R1)}"
+print of f"R2_MEAS {m2}"
+print of f"R2_ERR {abs of (m2 - logistic.R2)}"
+print of f"R3_MEAS {m3}"
+print of f"R3_ERR {abs of (m3 - logistic.R3)}"
+print of f"RATIO {(m2 - m1) / (m3 - m2)}"
+print of f"DELTA {logistic.FEIGENBAUM}"
+
+# ---- 3. the period-3 tangent bifurcation at 1 + sqrt(8) --------------
+#
+# 5e-4 either side of the analytic onset. Below it the attractor is
+# chaotic (the detector saturates at its cap); above it, a clean 3-cycle.
+
+p3_below is logistic.distinct_count of [logistic.R_P3 - 0.0005, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]
+p3_above is logistic.distinct_count of [logistic.R_P3 + 0.0005, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]
+print of f"P3_R {logistic.R_P3}"
+print of f"P3_BELOW {p3_below}"
+print of f"P3_ABOVE {p3_above}"
+
+# ---- 4. the period census, one per rung ------------------------------
+
+print of f"CENSUS_2_8 {logistic.distinct_count of [2.8, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]}"
+print of f"CENSUS_3_2 {logistic.distinct_count of [3.2, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]}"
+print of f"CENSUS_3_5 {logistic.distinct_count of [3.5, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]}"
+print of f"CENSUS_3_55 {logistic.distinct_count of [3.55, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]}"
+print of f"CENSUS_3_9 {logistic.distinct_count of [3.9, DET_TRANSIENT, DET_SAMPLES, DET_TOL, 64]}"
+
+print of "BIF-ORACLE-OK"

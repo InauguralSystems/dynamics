@@ -1,0 +1,208 @@
+# logistic — the iterated-map core: the logistic map and its
+# period-doubling cascade (dynamics#20, fleet UI ladder rung 1).
+#
+# WHY THIS SYSTEM EXISTS IN THIS REPO. The bifurcation view needs a
+# system that actually bifurcates, and nothing already here does: the
+# repo's flagship specimen is the damped oscillator x'' = -x - 2z x'
+# (physics.eigs), which is LINEAR — its only attractor is the origin for
+# every z > 0 and its qualitative behaviour changes exactly once, at the
+# critically-damped z = 1, with no branching of the attractor set. Conway
+# (life.eigs) is discrete-state; the solvers (solve.eigs) are linear
+# fixed-point iterations; the relaxation primitive (dynamics.eigs) is a
+# geometric decay. A bifurcation diagram drawn from any of them would be
+# a picture of a system that has no bifurcations. So the honest move is
+# to add the standard one.
+#
+#   x_{n+1} = r * x_n * (1 - x_n),   x in [0, 1],  r in [0, 4]
+#
+# and it is chosen precisely because its cascade is ANALYTICALLY KNOWN,
+# which makes it an external oracle rather than a picture:
+#
+#   * r < 1        : x -> 0.
+#   * 1 < r < 3    : one fixed point, x* = 1 - 1/r  (EXACT, closed form).
+#                    Its multiplier is f'(x*) = 2 - r, so it is stable
+#                    while |2 - r| < 1 — the first doubling is at r = 3
+#                    EXACTLY, not approximately.
+#   * 3 < r < 1+sqrt(6) : a 2-cycle, whose two points are also exact:
+#                    x± = (r + 1 ± sqrt((r-3)(r+1))) / (2r).
+#                    Its multiplier is 4 + 2r - r², so it loses stability
+#                    at r = 1 + sqrt(6) = 3.449489742783178, EXACTLY.
+#   * r3 = 3.5440903595519228... : 4-cycle -> 8-cycle (a known root of the
+#                    superstability/stability polynomial; quoted, not
+#                    derived here).
+#   * the doubling points accumulate at r_inf = 3.569945672... with
+#                    (r_{n} - r_{n-1}) / (r_{n+1} - r_{n}) -> Feigenbaum's
+#                    delta = 4.669201609...; the first ratio
+#                    (r2-r1)/(r3-r2) is 4.7514...
+#   * r = 4        : fully chaotic on [0, 1].
+#
+# tests/test_bifurcation.sh checks the numbers this module produces
+# against those closed forms — every plotted point on the period-1 and
+# period-2 branches against the algebra, and the located doubling points
+# against r1, r2, r3 and the first Feigenbaum ratio.
+#
+# ARCHITECTURE. This is a PURE core: no gfx, no lib/ui, and — unlike
+# physics.eigs / life.eigs / solve.eigs, which are runnable specimens
+# with a top-level demo — NO top-level side effects at all, so importing
+# it costs nothing. The bifurcation window (orbit.eigs) opens it, the
+# oracle (tests/bifurcation_oracle.eigs) opens the same functions
+# headlessly, and neither pays for a console demo on every launch. The
+# same split as the eigen-edit/eigen-sheet fleet pattern: pure core plus
+# a front-end that is defined and never called at load time.
+
+VERSION is "0.1.0"  # lint: allow W001 -- exported module surface
+
+# ---- analytic constants (the oracle's reference values) --------------
+
+# First period-doubling: |f'(x*)| = |2 - r| = 1.
+R1 is 3.0  # lint: allow W001 -- exported module surface
+# Second: the 2-cycle multiplier 4 + 2r - r² = -1  ->  r = 1 + sqrt(6).
+R2 is 1.0 + (sqrt of 6.0)  # lint: allow W001 -- exported module surface
+# Third (4-cycle -> 8-cycle): a known root, quoted to double precision.
+R3 is 3.5440903595519228  # lint: allow W001 -- exported module surface
+# Feigenbaum's delta, the cascade's asymptotic ratio.
+FEIGENBAUM is 4.669201609102990  # lint: allow W001 -- exported module surface
+# Onset of the period-3 window inside the chaotic band — a tangent
+# (saddle-node) bifurcation of the third iterate, at r = 1 + sqrt(8)
+# EXACTLY. Not part of the doubling cascade; it is the sharpest
+# analytic landmark in the chaotic region, and by Sharkovskii the
+# existence of a 3-cycle implies cycles of every period.
+R_P3 is 1.0 + (sqrt of 8.0)  # lint: allow W001 -- exported module surface
+
+# Seed for every orbit here. NOT 0.5, and the reason is the point of the
+# whole module: a bifurcation diagram shows the attractor of a TYPICAL
+# orbit, and x0 = 0.5 is atypical at r = 4 — it is an exact pre-image of
+# the repelling fixed point 0 (0.5 -> 1.0 -> 0.0, and 0 is fixed), so the
+# r = 4 column would honestly but misleadingly collapse to a single point
+# at 0. That is a real property of that one initial condition, not a
+# numerical artifact, and the fix is to seed a typical point rather than
+# to hide the column.
+X0 is 0.4
+
+# ---- the map ---------------------------------------------------------
+
+define logistic_step(x, r) as:
+    return r * x * (1.0 - x)
+
+# The period-1 branch of the diagram: the analytic non-zero fixed
+# point, valid for r > 1. (Named for the branch rather than `fixed_point`
+# so it does not shadow lib/numerics' fixed-point ITERATOR — W021.)
+define branch_p1(r) as:
+    return 1.0 - 1.0 / r
+
+# The period-2 branch: the analytic 2-cycle, valid for 3 < r < 1+sqrt(6). Returned low
+# first. Outside that window the discriminant is negative and sqrt of a
+# negative is 0 in this runtime (numbers are finite by construction), so
+# callers must range-check rather than lean on a raised error.
+define branch_p2(r) as:
+    local d is sqrt of ((r - 3.0) * (r + 1.0))
+    return [(r + 1.0 - d) / (2.0 * r), (r + 1.0 + d) / (2.0 * r)]
+
+# ---- asymptotic sampling --------------------------------------------
+
+# Discard `transient` iterations from X0, then return the next
+# `samples` iterates — the attractor as the plot and the oracle see it.
+# The iteration runs `unobserved` (this is a hot scalar loop; the
+# observer's per-assignment entropy bookkeeping would dominate it and
+# has nothing to say about a discarded transient).
+define attractor(r, transient, samples) as:
+    local out is []
+    unobserved:
+        local x is X0
+        local i is 0
+        loop while i < transient:
+            x is r * x * (1.0 - x)
+            i is i + 1
+        local j is 0
+        loop while j < samples:
+            x is r * x * (1.0 - x)
+            append of [out, x]
+            j is j + 1
+    return out
+
+# How many DISTINCT points the attractor visits, to within `tol`, capped
+# at `cap` (a chaotic r would otherwise report `samples`). This is the
+# period detector: 1 on the fixed point, 2 on the 2-cycle, 4 on the
+# 4-cycle, and `cap` in chaos.
+#
+# Greedy clustering, not sorting: the window is short (tens of points),
+# and a cluster representative is the first member, so two points land
+# together exactly when they are within `tol` of that representative.
+define distinct_count(r, transient, samples, tol, cap) as:
+    local pts is attractor of [r, transient, samples]
+    local reps is []
+    local i is 0
+    loop while i < (len of pts):
+        local v is pts[i]
+        local hit is 0
+        local k is 0
+        loop while k < (len of reps):
+            if (abs of (v - reps[k])) <= tol:
+                hit is 1
+                k is len of reps
+            else:
+                k is k + 1
+        if hit == 0:
+            append of [reps, v]
+            if (len of reps) >= cap:
+                return cap
+        i is i + 1
+    return len of reps
+
+# Locate a period-doubling parameter by bisection on the distinct-point
+# count: the smallest r in [lo, hi] at which the attractor first shows
+# `target` distinct points. Requires the count to be monotone across the
+# bracket, which holds inside one window of the cascade — the caller
+# picks a bracket containing exactly one doubling.
+#
+# ACCURACY IS BOUNDED BY `transient`, NOT BY `steps`. At a doubling the
+# multiplier passes through magnitude 1, so convergence onto the
+# attractor is critically slow: just BELOW r_n the dying cycle's residual
+# decays only like |mu|^transient, and the detector cannot tell a
+# not-yet-decayed residual from a real split. So the located point lands
+# slightly BELOW the true one, by however far below r_n the residual is
+# still above `tol`, and bisecting past that floor buys nothing.
+# Measured with transient = 40000, tol = 1e-7, 20 steps: r1 low by 2.9e-4,
+# r2 by 1.0e-4, r3 by 3.7e-5 — the bias shrinks up the cascade because
+# the windows narrow faster than the multipliers slow down.
+define doubling_point(target, lo, hi, steps, transient, samples, tol) as:
+    local a is lo
+    local b is hi
+    local i is 0
+    loop while i < steps:
+        local m is (a + b) / 2.0
+        if (distinct_count of [m, transient, samples, tol, 64]) >= target:
+            b is m
+        else:
+            a is m
+        i is i + 1
+    return (a + b) / 2.0
+
+# ---- the sweep (what the chart plots) --------------------------------
+
+# Sweep r across `cols` values in [r0, r1] and return the attractor of
+# each as two PARALLEL FLAT LISTS — {"r": [...], "x": [...]} — which is
+# exactly the shape lib/ui's chart series wants (`chart_series` takes an
+# x list and a y list). Building it in the plot's own shape is what lets
+# the window hand the result straight to one series and never touch it
+# again; nothing downstream reshapes per frame.
+#
+# Total point count is cols * samples — the cost knob for both the
+# render and the sweep itself. See BIF_* in orbit.eigs for the values
+# the window ships.
+define sweep(r0, r1, cols, transient, samples) as:
+    local rs is []
+    local xs is []
+    local c is 0
+    loop while c < cols:
+        local r is r0
+        if cols > 1:
+            r is r0 + (r1 - r0) * c / (cols - 1)
+        local pts is attractor of [r, transient, samples]
+        local k is 0
+        loop while k < (len of pts):
+            append of [rs, r]
+            append of [xs, pts[k]]
+            k is k + 1
+        c is c + 1
+    return {"r": rs, "x": xs}

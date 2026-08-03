@@ -93,7 +93,19 @@ define _orbit_theme_table() as:
         "tooltip_bg": c.input,
         "tooltip_text": c.text,
         "disabled_overlay": c.bg,
-        "selection_bg": c.accent
+        "selection_bg": c.accent,
+        # The lib/ui chart widget's own surface keys (EigenScript#820).
+        # Without these the bifurcation view would draw on the toolkit's
+        # stock slate-blue plot surface next to the phase portrait's
+        # near-black one — two different labs in one window. Mapping
+        # them onto the SAME palette entries the canvas reads is what
+        # makes the theme layer cover the data surface, not just the
+        # chrome.
+        "plot_bg": c.plot_bg,
+        "plot_grid": c.plot_grid,
+        "plot_axis": c.plot_axis,
+        "plot_border": c.border,
+        "plot_series": [c.accent, c.accent2, c.red, c.text_dim]
     }
 
 # Apply the orbit-lab palette to lib/ui's ACTIVE theme, in place.

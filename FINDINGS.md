@@ -172,6 +172,15 @@ now forcing the chart/plot widget (with eigen-sheet#26 and EigenMiniSat#76):
 needed are xy series in data coordinates, axis placement at data zero,
 markers, and pan/zoom interaction. For `eigenscript-ui-toolkit-engineer`.
 
+**RESOLVED upstream — EigenScript#819 (PR #824), shipped in v0.35.0.** `chart`
+was generalised in place into a data-coordinate x-y plot: per-series `x` lists,
+`fixed_aspect`, labelled `vline`/`hline`/`point` markers, widget-owned
+drag-pan/wheel-zoom, incremental `add_xy`/`chart_trim`, and clipping by
+construction. dynamics is its first production consumer — the bifurcation view
+(slice 3) is built on it with no consumer-side workarounds. The phase portrait
+keeps its `canvas` on purpose: it needs a custom trail renderer, which is what
+the canvas escape hatch is for. Residual friction is F-DYN-14.
+
 ## F-DYN-10 — lib/ui gap: viz widget surfaces hardcode their colours instead of reading theme keys
 
 `_render_chart` / `_render_bar_chart` / `_render_waveform_view` in
@@ -183,6 +192,14 @@ plot surface — the one surface a data app is mostly made of. Even if F-DYN-9's
 xy chart existed today, it could not have taken the orbit-lab palette. Wants
 theme keys (e.g. `plot_bg`, `plot_grid`, `plot_border`) read at render time.
 For `eigenscript-ui-toolkit-engineer`.
+
+**RESOLVED upstream — EigenScript#820 (PR #824), shipped in v0.35.0.** The viz
+surfaces now read `plot_bg` / `plot_grid` / `plot_axis` / `plot_border` /
+`plot_series` (and `wave_*`) off the active theme, falling back to the built-in
+defaults for a theme dict that predates them. `orbit_theme.eigs` maps all five
+onto the same palette entries the phase-portrait canvas reads, so chrome and
+data surface are themed from the one module — verified in real pixels by the
+committed screenshot.
 
 ## F-DYN-11 — lib/ui gap: the wheel event carries no cursor position
 
@@ -221,6 +238,63 @@ The labels are now sized to the column by hand. Proposal: have
 still cannot corrupt the rest of the tree), or say so in the `canvas` doc
 comment next to the `on_mouse` / `on_wheel` notes. For
 `eigenscript-ui-toolkit-engineer`.
+
+## F-DYN-13 — the temporal assignment history is unbounded and arms on dead code → upstream EigenScript#827
+
+**This one froze the box.** Building the bifurcation view (dynamics#20 rung 1,
+slice 3), the new window grew **3.9 MB per rendered frame** — 258 MB at frame
+30, 529 MB at frame 100, 859 MB at frame 300, then SIGSEGV against a
+`ulimit -v` cap. Every correctness oracle was green throughout.
+
+Bisected to `load_file of "physics.eigs"`, and inside it to a single token:
+`frame_velocity`'s `prev of x`, in a demo helper the window **never calls**.
+The compiler arms `g_trace_hist` from a whole-program scan, and the history
+table it turns on (`src/trace.c`, `HistoryEntry`) is append-only with **no cap**
+and holds a **reference to every assigned value**. `lib/ui`'s chart allocates a
+coordinate pair per plotted point per frame (4,000 of them here), so every one
+of those was pinned forever.
+
+Minimal repro, no gfx and no lib/ui — a `prev of` inside a function that is
+never called, versus the same program without it:
+
+```
+prev_off N=100000  PEAK_KB 3456      prev_on N=100000  PEAK_KB 37248
+prev_off N=400000  PEAK_KB 3328      prev_on N=400000  PEAK_KB 140416
+```
+
+Flat versus linear in the iteration count. `record_history of 0` restores flat.
+
+Note this is the *other half* of F-DYN-1: that finding recorded the silent
+non-numeric coercion of the same builtin, and its "non-findings" note that
+`prev` works "provided `record_history` is never called" is now qualified —
+`prev` works, and arms an unbounded table for the whole program while doing it.
+
+**In this repo:** `orbit.eigs`'s `_run` calls the documented `record_history of 0`
+for the lifetime of a window session (a lab window asks no temporal questions)
+and restores the previous setting on exit. `tests/test_bif_mem.sh` carries a
+planted fault that removes that call and must go red, so when #827 lands the
+opt-out can come out and the gate still holds. For
+`eigenscript-runtime-engineer` / `eigenscript-trace-tape-engineer`.
+
+## F-DYN-14 — lib/ui: `chart` allocates a list per plotted point per frame → upstream EigenScript#828
+
+Surfaced as `chart`'s first production consumer. `_render_chart`'s per-sample
+loop calls `_chart_map`, which returns a fresh 2-element list, for every sample
+of every series on every frame — even when the data has not changed. Measured
+~24.5 µs/point/frame (4,000 points ≈ 98 ms/frame, 8,800 ≈ 190 ms), so a static
+diagram renders at ~10 fps and essentially all of it is allocation, not drawing.
+
+RSS is flat, so this is not a leak in the widget (verified separately at 4,000
+points over 30/100/300 frames: 130.9 / 131.1 / 131.2 MB, both styles, with and
+without markers and fixed bounds) — it is throughput and allocation pressure,
+and it is what turned F-DYN-13 from a slow drip into an OOM.
+
+Also filed there: `chart_marker of ["vline", x, y, label, color]` makes the
+caller invent a `y` that a vertical line ignores (and vice versa for `hline`),
+which is silently accepted if wrong.
+
+**Not** a blocker: F-DYN-9's ask (an x-y plot widget) is fully answered — the
+API needed no changes to carry this view. For `eigenscript-ui-toolkit-engineer`.
 
 ---
 

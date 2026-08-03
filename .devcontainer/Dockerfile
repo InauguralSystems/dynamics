@@ -35,6 +35,7 @@ RUN apt-get update \
         libsdl2-2.0-0 \
         python3 \
         python3-pil \
+        time \
         x11-apps \
         xauth \
         xdotool \
@@ -43,7 +44,7 @@ RUN apt-get update \
 
 # Full EigenScript source at the pinned tag; build the gfx variant (the
 # binary hard-links to src/eigenscript, which finds lib/ next to it).
-ARG EIGS_REF=v0.34.0
+ARG EIGS_REF=v0.35.0
 RUN git clone --depth 1 --branch "${EIGS_REF}" \
         https://github.com/InauguralSystems/EigenScript.git /opt/eigenscript \
  && make -C /opt/eigenscript gfx CC=gcc

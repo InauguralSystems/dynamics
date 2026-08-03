@@ -34,9 +34,11 @@
 # frozen workstation, and it is the reason this gate could be developed
 # at all.
 #
-# The gate is validated with TWO planted faults: one restoring the actual
-# leak that was found (the temporal-history opt-out removed), one
-# removing the build-once guard. Each must be caught.
+# The gate is validated with TWO planted faults: one that retains the
+# frame's plotted points (per-frame retention, the class the original
+# leak belonged to), one that removes the build-once guard. Each must be
+# caught, and each is measured — a fault nobody has watched go red is a
+# gate that has stopped discriminating.
 #
 # Exits 2 (= failure in CI, skip locally) when the runtime has no gfx
 # builtins, so it can never be silently dropped.
@@ -197,17 +199,50 @@ PY_END
     echo "$tree"
 }
 
-echo "--- planted fault 1: the temporal-history opt-out removed (the real bug) ---"
-# physics.eigs contains one `prev of`, which arms the runtime's
-# append-only assignment history for the whole program; the chart's
-# per-point allocations are then pinned, at ~3.9 MB per frame. The gate
-# must reject this on its FIRST rung. EigenScript#827.
-T1=$(plant hist "    local hist_was is record_history of 0" "    local hist_was is record_history of 1")
+echo "--- planted fault 1: the bifurcation tick keeps its frame's points ---"
+# The headline invariant of this view is that bifurcation mode does NO
+# per-frame work (orbit.eigs `_tick`). This fault breaks exactly that:
+# every frame rebuilds the plotted point set and KEEPS it — the shape any
+# naive per-frame cache (a pick index, a frame history, an undo trail)
+# would have, and the same class as the two retention bugs this repo has
+# already had: the unbounded `sim.pts` trail and the pinned per-point
+# allocations of F-DYN-13. Every structural counter stays CORRECT under
+# it — built=1, series=1, points=4000, markers=4 — so only the shape of
+# the memory curve can see it, which is the thing this fault has to
+# prove. Measured on v0.35.1: 176,384 KB at 30 frames, 279,104 KB at 100
+# (~1.46 MB/frame) — it fails BOTH RSS checks, the 200 MB ceiling on the
+# second rung and the flatness limit by 102,720 KB against 25,600.
+#
+# WHAT USED TO BE HERE, and why it went. This leg used to flip
+# `record_history of 0` — the opt-out `_run` carried against the
+# runtime's unbounded temporal history (EigenScript#827) — back on, and
+# require the resulting 3.9 MB/frame build to be rejected. EigenScript#829
+# (v0.35.1) bounds that table by program TEXT and arms it per NAME, so
+# turning history on grows nothing any more: measured, not assumed, the
+# flipped build ran flat at ~134 MB and SAILED THROUGH this gate. The
+# opt-out is gone from `_run` and a fault that can no longer be planted
+# validates nothing — so it is re-pointed, not deleted (dynamics#24).
+T1=$(plant framepts "    if _app.mode == \"bif\":
+        if _app.hook != null:
+            _app.hook of _app.sim
+        return null" "    if _app.mode == \"bif\":
+        if _app.frame_pts == null:
+            _app.frame_pts is []
+        local fs is _app.chart.series[0]
+        local pts is []
+        local i is 0
+        loop while i < (len of fs.data):
+            append of [pts, [fs.x[i], fs.data[i]]]
+            i is i + 1
+        append of [_app.frame_pts, pts]
+        if _app.hook != null:
+            _app.hook of _app.sim
+        return null")
 if run_gate "$T1" quiet "static" "30 100"; then
     echo "FAIL: the leaking build passed the memory gate — the gate can't discriminate"
     exit 1
 fi
-echo "PASS: planted fault 'hist' is caught (restores the 3.9 MB/frame growth)"
+echo "PASS: planted fault 'framepts' is caught (per-frame retention, every structural counter still correct)"
 
 echo "--- planted fault 2: the build-once sweep guard removed ---"
 T2=$(plant guard "    if _app.sweep_done == 1:

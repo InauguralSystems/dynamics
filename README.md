@@ -143,7 +143,7 @@ Forcing-function findings (runtime gaps surfaced while building) are logged in
 (#255/#256/#280/#375, and #819/#820 which closed the two lib/ui plot gaps);
 a calling-convention edge remains open, and building this rung surfaced two
 more: EigenScript#827 (unbounded temporal assignment history — the one that
-froze a box, fixed by #829 and shipped in v0.35.1, the pin this repo runs) and
+froze a box, fixed by #829 and shipped in v0.35.1, carried by this repo's pin) and
 #828 (chart render allocation).
 
 ## Develop locally

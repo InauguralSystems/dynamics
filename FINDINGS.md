@@ -269,8 +269,8 @@ non-numeric coercion of the same builtin, and its "non-findings" note that
 `prev` works "provided `record_history` is never called" is now qualified —
 `prev` works, and arms an unbounded table for the whole program while doing it.
 
-**FIXED upstream** by EigenScript#829, shipped in **v0.35.1** (the pin this repo
-now carries): the history table is bounded by program TEXT — entries no backward
+**FIXED upstream** by EigenScript#829, shipped in **v0.35.1** (carried by this
+repo's pin): the history table is bounded by program TEXT — entries no backward
 query can reach are pruned at append time — and arming is per NAME instead of
 whole-program, so `physics.eigs`'s dead-code `prev of` arms nothing here.
 

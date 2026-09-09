@@ -188,6 +188,8 @@ plant() {
     rm -rf "$tree"; mkdir -p "$tree/tests"
     cp "$ROOT"/*.eigs "$tree/"
     cp "$ROOT"/tests/*.eigs "$tree/tests/"
+    # EigenScript v0.43.0 (#1106): planted $TMP trees need eigs.json for imports
+    cp "$ROOT"/eigs.json "$tree/"
     python3 - "$tree/orbit.eigs" "$needle" "$repl" <<'PY_END'
 import sys
 path, needle, repl = sys.argv[1], sys.argv[2], sys.argv[3]

@@ -15,7 +15,6 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
 TMP="$(mktemp -d)"
-trap "rm -rf '$TMP'" EXIT
 
 field() { echo "$1" | grep -E "^$2 " | awk '{print $2}'; }
 
@@ -62,9 +61,15 @@ check "$OUT" || exit 1
 echo "PASS: dump path keeps the whole trajectory; interactive path stays bounded and display-identical"
 
 # Planted fault: drop the cap and the bound assertion must catch it.
-sed 's/^trimmed.cap is orbit.HIST_CAP$/trimmed.cap is 0/' tests/orbit_hist_dump.eigs > "$TMP/nocap.eigs"
-cmp -s tests/orbit_hist_dump.eigs "$TMP/nocap.eigs" && { echo "FAIL: planted-fault substitution did not apply"; exit 1; }
-FOUT=$("$EIGS" "$TMP/nocap.eigs" 2>&1)
+# Write under the repo (not $TMP): EigenScript v0.43.0 (#1106) resolves
+# `import orbit` via file-relative then project-root (eigs.json). A copy
+# under /tmp has neither, so the fault run died before the checker ran and
+# `set -e` turned that into a silent suite red on the v0.43.0 pin bump.
+PLANT="tests/.nocap_orbit_hist.eigs"
+trap "rm -rf '$TMP' '$PLANT'" EXIT
+sed 's/^trimmed.cap is orbit.HIST_CAP$/trimmed.cap is 0/' tests/orbit_hist_dump.eigs > "$PLANT"
+cmp -s tests/orbit_hist_dump.eigs "$PLANT" && { echo "FAIL: planted-fault substitution did not apply"; exit 1; }
+FOUT=$("$EIGS" "$PLANT" 2>&1)
 if check "$FOUT" quiet; then
     echo "FAIL: planted fault (cap removed) passed the bound check — the checker can't discriminate"
     exit 1

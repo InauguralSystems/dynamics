@@ -46,6 +46,7 @@ echo "PASS: all $N .eigs files lint clean"
 echo "--- planted fault: an unused variable ---"
 mkdir -p "$TMP/fault/tests"
 cp ./*.eigs "$TMP/fault/"
+cp eigs.json "$TMP/fault/"
 printf 'DEAD_CONSTANT is 42\nprint of "hi"\n' > "$TMP/fault/planted.eigs"
 if lint_tree "$TMP/fault" quiet; then
     echo "FAIL: an unused variable passed the lint gate — the gate isn't running"

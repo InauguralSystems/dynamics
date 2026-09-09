@@ -115,6 +115,10 @@ plant() {
     rm -rf "$tree"; mkdir -p "$tree/tests"
     cp logistic.eigs "$tree/"
     cp tests/bifurcation_oracle.eigs "$tree/tests/"
+    # EigenScript v0.43.0 (#1106): import/load_file need project-root eigs.json
+    # (cwd no longer resolves). Without this, planted trees under $TMP die on
+    # `import logistic` before the oracle assertions can catch the fault.
+    cp eigs.json "$tree/"
     python3 - "$tree/logistic.eigs" "$needle" "$repl" <<'PY'
 import sys
 path, needle, repl = sys.argv[1], sys.argv[2], sys.argv[3]

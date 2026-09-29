@@ -54,7 +54,7 @@ echo "PASS: import $PKG_NAME → observer convergence helpers run"
 cat > "$TMP/app2.eigs" <<EOF
 import $PKG_NAME
 ks is keys of $PKG_NAME
-if (contains of [ks, "_seed_marker"]) == 1:
+if (list_contains of [ks, "_seed_marker"]) == 1:
     print of "LEAKED"
 else:
     print of "private"

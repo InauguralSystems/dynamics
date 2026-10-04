@@ -201,6 +201,14 @@ define pagerank(m, maxit) as:
     return [r, it]
 
 # ---- demo ----
+# zeros returns a numeric buffer since EigenScript#1093. Materialize only
+# for display so both list and buffer-backed solvers print their components.
+define display_vector(v) as:
+    local components is []
+    for i in range of (len of v):
+        append of [components, v[i]]
+    return components
+
 print of "=== iterative solvers: the predicate as a loop condition ==="
 print of "every loop runs until `report of change` is settled and HOLDs — the observer,"
 print of "not a magnitude tolerance, decides when to stop. (iters include the hold)"
@@ -210,9 +218,9 @@ A is [[4.0, -1.0, 0.0], [-1.0, 4.0, -1.0], [0.0, -1.0, 4.0]]
 bb is [3.0, 2.0, 3.0]
 rj is jacobi of [A, bb, 500]
 rg is gauss_seidel of [A, bb, 500]
-print of f"Jacobi        Ax=b -> {rj[0]}"
+print of f"Jacobi        Ax=b -> {display_vector of rj[0]}"
 print of f"              {rj[1]} iters"
-print of f"Gauss-Seidel  Ax=b -> {rg[0]}"
+print of f"Gauss-Seidel  Ax=b -> {display_vector of rg[0]}"
 print of f"              {rg[1]} iters  (fresh values -> fewer than Jacobi)"
 print of ""
 
@@ -224,6 +232,6 @@ print of ""
 # 3-node graph 0->{1,2}, 1->{2}, 2->{0}; column-stochastic. True stationary [0.4,0.2,0.4].
 G is [[0.0, 0.0, 1.0], [0.5, 0.0, 0.0], [0.5, 1.0, 0.0]]
 rr is pagerank of [G, 500]
-print of f"PageRank stationary distribution -> {rr[0]}  ({rr[1]} iters)"
+print of f"PageRank stationary distribution -> {display_vector of rr[0]}  ({rr[1]} iters)"
 print of ""
 print of "DONE"

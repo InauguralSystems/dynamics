@@ -35,8 +35,7 @@ SOUT=$("$EIGS" solve.eigs 2>&1)
 echo "$SOUT"
 echo "$SOUT" | grep -q "DONE"                          || { echo "FAIL: solve.eigs did not finish"; exit 1; }
 echo "$SOUT" | grep -q "dominant eigenvalue -> 2"      || { echo "FAIL: power iteration eigenvalue wrong"; exit 1; }
-# PageRank true stationary is [0.4, 0.2, 0.4]
-echo "$SOUT" | grep -qE "0\.3999|0\.4000"              || { echo "FAIL: PageRank did not reach the stationary distribution"; exit 1; }
-# both linear solves reach ~[1,1,1]
-echo "$SOUT" | grep -q "0.9999"                        || { echo "FAIL: Jacobi/Gauss-Seidel did not converge to the solution"; exit 1; }
+# Check every component on its own named row; a number printed by another
+# solver must not mask a missing distribution or an incorrect component.
+printf '%s\n' "$SOUT" | python3 tests/check_solver_output.py
 echo "PASS: solvers converge via the predicate-driven loop (settled + hold)"

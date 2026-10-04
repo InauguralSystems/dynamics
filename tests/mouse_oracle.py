@@ -48,7 +48,7 @@ and the corresponding check MUST go red. The wrapper drives all four runs.
 Assumes an X display (the wrapper uses xvfb-run). Needs the gfx build
 (EIGENSCRIPT), xdotool, xwd, PIL.
 """
-import os, re, struct, subprocess, sys, tempfile, time, shutil
+import os, re, signal, struct, subprocess, sys, tempfile, time, shutil
 from PIL import Image
 
 EIGS = os.environ.get("EIGENSCRIPT", "eigenscript")
@@ -83,6 +83,7 @@ CHANGED_MIN = 100                           # pixels: a redraw of the whole plot
 ADVANCE_MIN = 1
 ACTION_TIMEOUT = 8.0
 POLL_INTERVAL = 0.05
+OWNED_APPS = []                            # atlas/orbit, including setup failure
 
 
 # ---------- X plumbing ----------
@@ -105,27 +106,115 @@ def app_output(proc):
 
 
 def ensure_live(proc):
+    # Support a synchronous launcher, not detached/daemonized children: an
+    # exited launcher is an infrastructure failure, followed by group cleanup.
     if proc.poll() is not None:
         raise RuntimeError("app exited rc%d: %s" % (proc.returncode, app_output(proc)))
 
 
 def start_app(args, cwd, tmp, name):
     path = os.path.join(tmp, name + ".log")
-    with open(path, "w") as log:
-        proc = subprocess.Popen([EIGS] + args, cwd=cwd, env=ENV,
-                                stdout=log, stderr=subprocess.STDOUT, text=True)
-    proc.output_path = path
+    # Defer TERM until the new session is registered for main's finally,
+    # including an interruption before the caller receives the Popen object.
+    old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    try:
+        with open(path, "w") as log:
+            proc = subprocess.Popen([EIGS] + args, cwd=cwd, env=ENV,
+                                    stdout=log, stderr=subprocess.STDOUT, text=True,
+                                    start_new_session=True,
+                                    # This oracle is single-threaded. Do not
+                                    # leave the child's TERM masked at exec.
+                                    preexec_fn=lambda: signal.pthread_sigmask(
+                                        signal.SIG_SETMASK, old_mask))
+        proc.output_path = path
+        OWNED_APPS.append(proc)
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
     return proc
 
 
-def stop_app(proc):
-    if proc.poll() is None:
-        proc.terminate()
+def owned_pid(proc, pid):
+    # EIGENSCRIPT may be a non-exec counting launcher. Its runtime child,
+    # not Popen.pid, owns the X window; both must remain in our new session.
+    try:
+        return os.getsid(pid) == proc.pid and os.getpgid(pid) == proc.pid
+    except ProcessLookupError:
+        return False
+
+
+def owned_live_pids(proc):
+    # Linux/X11 QA: zombies have exited and cannot retain windows or run work.
+    members = []
+    for entry in os.scandir("/proc"):
+        if not entry.name.isdecimal():
+            continue
+        pid = int(entry.name)
+        if not owned_pid(proc, pid):
+            continue
         try:
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-            proc.wait(timeout=5)
+            with open("/proc/%d/stat" % pid) as fh:
+                state = fh.read().rsplit(")", 1)[1].split()[0]
+        except FileNotFoundError:
+            continue
+        if state != "Z":
+            members.append(pid)
+    return members
+
+
+def stop_app(proc, deadline=None):
+    # TERM during normal finally must not interrupt cleanup before group KILL.
+    old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    try:
+        _stop_app(proc, deadline)
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+
+def _stop_app(proc, deadline=None):
+    # Cleanup the owned family even if its launcher has already exited.
+    # One shared budget, comfortably below the row supervisor's 2s TERM
+    # grace. A TERM-ignoring runtime must not strand its isolated group.
+    if deadline is None:
+        deadline = time.monotonic() + 0.8
+    term_deadline = min(deadline, time.monotonic() + 0.25)
+    for sig, until in ((signal.SIGTERM, term_deadline),
+                       (signal.SIGKILL, deadline)):
+        if owned_live_pids(proc):
+            try:
+                os.killpg(proc.pid, sig)
+            except ProcessLookupError:
+                pass
+        while time.monotonic() < until and owned_live_pids(proc):
+            time.sleep(min(POLL_INTERVAL, max(0, until - time.monotonic())))
+    proc.wait(timeout=max(0.01, deadline - time.monotonic()))
+    remaining = owned_live_pids(proc)
+    if remaining:
+        raise RuntimeError("owned app cleanup deadline: %r" % remaining)
+    if proc in OWNED_APPS:
+        OWNED_APPS.remove(proc)
+
+
+def stop_apps():
+    # Defer TERM across the whole drain, not just the first app. A pending
+    # TERM is delivered after restoring the mask and remains a nonzero error.
+    old_mask = signal.pthread_sigmask(signal.SIG_BLOCK, {signal.SIGTERM})
+    errors = []
+    deadline = time.monotonic() + 0.8
+    try:
+        for proc in list(OWNED_APPS):
+            try:
+                stop_app(proc, deadline)
+            except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+                errors.append(str(exc))
+        if errors:
+            raise RuntimeError("owned app cleanup: " + "; ".join(errors))
+    finally:
+        signal.pthread_sigmask(signal.SIG_SETMASK, old_mask)
+
+
+def interrupted(signum, frame):
+    signal.signal(signal.SIGTERM, signal.SIG_IGN)
+    raise RuntimeError("mouse oracle interrupted by signal %d" % signum)
 
 
 def xwd_to_image(path):
@@ -158,11 +247,22 @@ def wait_for_window(proc, title):
     deadline = time.monotonic() + 30.0
     while time.monotonic() < deadline:
         ensure_live(proc)
-        windows = xdo("search", "--all", "--onlyvisible", "--pid", proc.pid,
-                      "--name", "^" + re.escape(title) + "$", search=True,
-                      timeout=min(3.0, max(0.01, deadline - time.monotonic())))
-        if windows.strip():
-            return windows.strip().splitlines()[0]
+        for pid in owned_live_pids(proc):
+            if time.monotonic() >= deadline:
+                break
+            # Search conjunctively by exact title AND a verified owned PID.
+            # Foreign/no-PID windows never enter the accepted population.
+            windows = xdo("search", "--all", "--onlyvisible", "--pid", pid,
+                          "--name", "^" + re.escape(title) + "$", search=True,
+                          timeout=min(3.0, max(0.01, deadline - time.monotonic())))
+            if windows.strip() and pid in owned_live_pids(proc):
+                ensure_live(proc)
+                if time.monotonic() >= deadline:
+                    break
+                wid = windows.strip().splitlines()[0]
+                print("OWNED window=%s pid=%d session/group=%d" %
+                      (wid, pid, proc.pid), flush=True)
+                return wid
         time.sleep(min(POLL_INTERVAL, max(0, deadline - time.monotonic())))
     # Never read a live stdout pipe on timeout: that would defeat the bound.
     raise RuntimeError("window deadline expired: " + app_output(proc))
@@ -601,8 +701,11 @@ def main():
         infrastructure_error = str(exc)
         print("ERROR mouse oracle: " + infrastructure_error)
     finally:
-        if proc is not None:
-            stop_app(proc)
+        try:
+            stop_apps()
+        except (RuntimeError, OSError, subprocess.SubprocessError) as exc:
+            infrastructure_error = str(exc)
+            print("ERROR mouse oracle: " + infrastructure_error)
         if evidence:
             for name in ("orbit.log", "atlas.log"):
                 path = os.path.join(tmp, name)
@@ -619,4 +722,7 @@ def main():
 
 
 if __name__ == "__main__":
+    # Ordinary termination still runs atlas/orbit finally cleanup. SIGKILL
+    # cannot run Python cleanup and remains an external supervisor concern.
+    signal.signal(signal.SIGTERM, interrupted)
     main()

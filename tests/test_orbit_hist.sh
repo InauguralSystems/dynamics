@@ -48,8 +48,8 @@ check() {
     fi
     # the trim is display-only.
     [ "$tailm" = "1" ]  || { [ -n "$quiet" ] || echo "FAIL: retained points are not the tail of the uncapped run"; bad=1; }
-    [ "$frameq" = "1" ] || { [ -n "$quiet" ] || echo "FAIL: capped and uncapped runs disagree on frame count"; bad=1; }
-    [ "$stateq" = "1" ] || { [ -n "$quiet" ] || echo "FAIL: capped and uncapped runs disagree on the current state"; bad=1; }
+    [ "$frameq" = "true" ] || { [ -n "$quiet" ] || echo "FAIL: capped and uncapped runs disagree on frame count"; bad=1; }
+    [ "$stateq" = "true" ] || { [ -n "$quiet" ] || echo "FAIL: capped and uncapped runs disagree on the current state"; bad=1; }
     return $bad
 }
 

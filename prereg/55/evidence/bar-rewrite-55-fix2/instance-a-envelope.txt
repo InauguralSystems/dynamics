@@ -1,0 +1,5 @@
+starts=117 steps=40000 directions=forward,reverse
+forward_max_abs_x=6.000000000000 forward_max_abs_y=5.630186160553
+outward_rounding=0.001 box_x=6.000 box_y=5.631
+reverse_completed=75 reverse_safety_stops=42 reverse_max_abs_x=6.000000000000 reverse_max_abs_y=3.117329391227
+exact_max_abs_Fprime=94.100000000000 h=0.01 stability_product=0.941000000000

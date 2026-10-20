@@ -1,0 +1,272 @@
+{
+  "schema": 1,
+  "issue": 55,
+  "eigenscript": {
+    "ref": "v0.46.0",
+    "sha": "4a3a5c1941568e9bc562c7c8221cff22dc8ba697",
+    "jit_off": true,
+    "observer": {
+      "binding": "E=(x*x+y*y)/2",
+      "read_step": "final",
+      "origin_predicate": "converged",
+      "outer_predicate": "oscillating",
+      "window": 10,
+      "window_min": 4,
+      "window_max": 64,
+      "dh_zero": 0.001,
+      "dh_small": 0.01,
+      "h_low": 0.1,
+      "scale": 0.001,
+      "sample_time": 1.0,
+      "sample_steps_a": 100,
+      "sample_steps_b": 200
+    }
+  },
+  "section": {
+    "equation": "y=0",
+    "x_positive": true,
+    "physical_direction": -1
+  },
+  "oracle": {
+    "inner": 1.487060441512,
+    "outer": 3.922873870354,
+    "absolute_allowance": 1e-09,
+    "iteration_stop": 1e-12,
+    "effort_levels": [
+      {
+        "method": "DOP853",
+        "rtol": 1e-12,
+        "atol": 1e-14
+      },
+      {
+        "method": "DOP853",
+        "rtol": 1e-13,
+        "atol": 1e-15
+      }
+    ],
+    "van_der_pol": 1.919275835629
+  },
+  "instance_a": {
+    "coefficients": [
+      0.5,
+      0.0,
+      -0.3333333333333333,
+      0.0,
+      0.02
+    ],
+    "grid": {
+      "start": 0.2,
+      "stop": 6.0,
+      "step": 0.05,
+      "count": 117
+    },
+    "gray_relative": 0.02,
+    "gray_members": [
+      1.5
+    ],
+    "rk4": {
+      "h": 0.01,
+      "duration": 400.0,
+      "steps": 40000,
+      "transient": 300.0,
+      "transient_steps": 30000,
+      "window": 100.0,
+      "window_steps": 10000
+    },
+    "visited_x_bound": 6.0,
+    "derivative_bound": 94.1,
+    "stability_product": 0.941,
+    "visited_y_bound": 5.631,
+    "envelope_generator": "prereg/55/instance_a_envelope.py"
+  },
+  "family_b": {
+    "rng": "numpy.default_rng(55)",
+    "seed": 55,
+    "count": 160,
+    "ranges": {
+      "a1": [
+        -0.5,
+        0.5
+      ],
+      "a2": [
+        -0.1,
+        0.1
+      ],
+      "a3": [
+        -0.05,
+        0.05
+      ],
+      "a4": [
+        -0.005,
+        0.005
+      ],
+      "a5": [
+        0.001,
+        0.005
+      ]
+    },
+    "data": "prereg/55/family_b.csv",
+    "sha256": "aeda5368669b07a926535bfece612d9543b7d6c9b2cd19d647d69fd59e729eff",
+    "grid": {
+      "start": 0.25,
+      "stop": 5.0,
+      "step": 0.25,
+      "count": 20
+    },
+    "rk4": {
+      "h": 0.005,
+      "duration": 400.0,
+      "steps": 80000,
+      "transient": 300.0,
+      "transient_steps": 60000,
+      "window": 100.0,
+      "window_steps": 20000
+    },
+    "envelope": {
+      "directions": [
+        "forward",
+        "reverse"
+      ],
+      "starts_per_row": 20,
+      "table": "prereg/55/evidence/bar-rewrite-55-fix/family_b_envelope.csv",
+      "margin": 0.1,
+      "box_scope": "per-row abs(x),abs(y)",
+      "reverse_escape": "reject immediately before leaving box",
+      "max_stability_product": 0.252789708,
+      "require_each_product_le": 1.0,
+      "table_sha256": "735a329e1019786e2851c96b429e3f6e128622353c86efe0e4eba6bdc1652e6d"
+    },
+    "oracle_coverage": {
+      "generator": "prereg/55/oracle_settled.py",
+      "table": "prereg/55/evidence/bar-rewrite-55-fix2/oracle_settled.csv",
+      "table_sha256": "4f0ecb1b4b0a0c9f25a9226e5e313006fbfdb7ed27b99e8b4095ecf0522e7bc7",
+      "method": "SciPy DOP853",
+      "rtol": 1e-10,
+      "atol": 1e-12,
+      "max_step": 0.5,
+      "window": [
+        200,
+        300
+      ],
+      "minimum_crossings": 4,
+      "median_halves_tolerance": 1e-07,
+      "retention_floor": 0.9,
+      "scope": "each row and direction with nonzero denominator"
+    }
+  },
+  "estimator": {
+    "crossing_location": "cubic Hermite endpoint states and endpoint vector fields",
+    "formula": "H(s)=(2s^3-3s^2+1)z0+(s^3-2s^2+s)h*f(z0)+(-2s^3+3s^2)z1+(s^3-s^2)h*f(z1)",
+    "root": "bisection of H_y(s)=0 on [0,1] for direction-appropriate bracket; require H_x(s)>0",
+    "used_by": [
+      "item3",
+      "item4",
+      "item7 observer"
+    ],
+    "aggregate": "median",
+    "successive_tolerance": 1e-07
+  },
+  "clustering": {
+    "method": "sorted greedy complete-link span",
+    "maximum_span": 0.01,
+    "direction_rule": "pool forward and reverse estimates; union within maximum_span is one semi-stable/double-count cluster"
+  },
+  "forward_safety_box": 1000000.0,
+  "fault": {
+    "method": "scratch rebuild of pinned runtime",
+    "patch": "#define OBSERVER_WINDOW_N 10 -> #define OBSERVER_WINDOW_N 4 in src/eigenscript.h",
+    "build_command": "make -C \"$scratch\" gfx CC=gcc",
+    "runs": 1,
+    "pass_only_if": "completed item3 prints reaches_3>=1",
+    "crash_refusal_undefined_or_incomplete": "fail"
+  },
+  "trace": {
+    "strict_replay": true,
+    "occurrence_window": 256,
+    "comparison": "canonical verdict JSONL bytes"
+  },
+  "baseline": {
+    "method": "DOP853",
+    "rtol": 1e-10,
+    "atol": 1e-12,
+    "classifier_tolerance": 1e-06,
+    "fixed_point": {
+      "seed": 4.0,
+      "map": "positive-x y=0 direction=-1 first return",
+      "kick_time": 1e-06,
+      "max_step": 0.05,
+      "stopping_delta": 1e-12,
+      "maximum_iterations": 10000
+    }
+  },
+  "compute": {
+    "budget_rate": 249956.759,
+    "family_rows": 160,
+    "sweep_equivalents": 7,
+    "steps_per_sweep": 256000000,
+    "instance_steps": 4840000,
+    "total_steps": 1796840000,
+    "seconds": 7188.603369593218,
+    "cpu_hours": 1.996834,
+    "sizing_rule": "largest integer N such that (7*N*20*80000+4840000)/249956.759/3600 <= 2",
+    "repetitions": 5,
+    "statistic": "maximum throughput",
+    "timing": "Python time.monotonic_ns around subprocess.run",
+    "binary": "/tmp/eigenscript/build/release/eigenscript",
+    "binary_sha256": "c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6",
+    "workload_sha256": "37feca5eb2f13e47d8e1dc59df409525502a16f95764284a8e3764959f8f3f88",
+    "cpu_model": "Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz"
+  },
+  "companion_network_row": "moved to a separate future issue",
+  "after_eigenscript_1758_round3": "follow-up only",
+  "acceptance": {
+    "basin_misses": 0,
+    "forward_diverging": 0,
+    "max_cycles": 2,
+    "outer_relative_error": 0.005,
+    "rk4_h_half_delta": 1e-07,
+    "gray_relative": 0.02
+  },
+  "theorem_oracle": {
+    "source": "openai/math family 143 Lean comparator only",
+    "artifact": "lean/ComparatorChallenges/QuinticLienard.lean",
+    "url": "https://raw.githubusercontent.com/openai/math/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/ComparatorChallenges/QuinticLienard.lean",
+    "commit": "1581d4cbdd69a0faf34b2089614fe2a814316a6a",
+    "sha256": "cb34f454db432f46902a17036812adde4c73fe276d6d7a8a8b21797ace40d000",
+    "hypotheses": [
+      "F : Polynomial \u211d",
+      "F.degree \u2264 5"
+    ],
+    "statement": "(\u2200 F : Polynomial \u211d, F.degree \u2264 5 \u2192 {C : Set Plane | IsLimitCycle F C}.encard \u2264 2) \u2227 (\u2203 F : Polynomial \u211d, F.degree \u2264 5 \u2227 {C : Set Plane | IsLimitCycle F C}.encard = 2)"
+  },
+  "positive_controls": {
+    "must_precede_family_b": true,
+    "same_item3_pipeline": true,
+    "instance_a": {
+      "clusters": 2,
+      "forward_outer": 3.922873870354,
+      "reverse_inner": 1.487060441512
+    },
+    "van_der_pol": {
+      "F": "x^3/3-x",
+      "clusters": 1,
+      "amplitude": 1.919275835629
+    },
+    "amplitude_tolerance": 1e-09,
+    "maximum_cluster_span": 0.01,
+    "required_retention": 1.0
+  },
+  "deviations": [
+    {
+      "change": "Family B 1000 to 160 by compute-sizing rule",
+      "authorized_by": "orchestrator briefs",
+      "date": "2026-10-20"
+    },
+    {
+      "change": "observer-derived amplitude to observer gate plus Hermite Sigma estimator",
+      "reason": "observer exposes no amplitude",
+      "authorized_by": "orchestrator briefs",
+      "date": "2026-10-20"
+    }
+  ]
+}

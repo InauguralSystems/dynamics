@@ -1,0 +1,25 @@
+# Fixed workload for the v0.46.0 interpreted-RK4 rate measurement.
+N is 1000000
+h is 0.01
+x is 1.0
+y is 0.0
+i is 0
+loop while i < N:
+    k1x is y - ((x*x*x*x*x/50.0) - (x*x*x/3.0) + (x/2.0))
+    k1y is 0.0 - x
+    qx is x + (0.5*h*k1x)
+    qy is y + (0.5*h*k1y)
+    k2x is qy - ((qx*qx*qx*qx*qx/50.0) - (qx*qx*qx/3.0) + (qx/2.0))
+    k2y is 0.0 - qx
+    qx is x + (0.5*h*k2x)
+    qy is y + (0.5*h*k2y)
+    k3x is qy - ((qx*qx*qx*qx*qx/50.0) - (qx*qx*qx/3.0) + (qx/2.0))
+    k3y is 0.0 - qx
+    qx is x + (h*k3x)
+    qy is y + (h*k3y)
+    k4x is qy - ((qx*qx*qx*qx*qx/50.0) - (qx*qx*qx/3.0) + (qx/2.0))
+    k4y is 0.0 - qx
+    x is x + (h*(k1x + 2.0*k2x + 2.0*k3x + k4x)/6.0)
+    y is y + (h*(k1y + 2.0*k2y + 2.0*k3y + k4y)/6.0)
+    i is i + 1
+print of f"RK4_STEPS {N} FINAL {x} {y}"

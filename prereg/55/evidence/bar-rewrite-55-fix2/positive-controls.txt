@@ -1,0 +1,10 @@
+method=DOP853 rtol=1e-12 atol=1e-14 event=y direction=physical--1
+inner=1.487060441512 iterations=10 final_delta=1.186e-13 mode=reverse
+outer=3.922873870354 iterations=2 final_delta=8.882e-15 mode=forward
+vanderpol=1.919275835629 iterations=5 final_delta=4.219e-14 mode=forward F=x^3/3-x
+method=DOP853 rtol=1e-13 atol=1e-15 event=y direction=physical--1
+inner=1.487060441512 iterations=10 final_delta=1.186e-13 mode=reverse
+outer=3.922873870354 iterations=2 final_delta=3.553e-15 mode=forward
+vanderpol=1.919275835629 iterations=5 final_delta=4.152e-14 mode=forward F=x^3/3-x
+item3_required instance_a clusters=2 forward=3.922873870354 reverse=1.487060441512 tolerance=1e-9 span<=0.01 retention=100%
+item3_required vanderpol clusters=1 amplitude=1.919275835629 tolerance=1e-9 span<=0.01 retention=100%

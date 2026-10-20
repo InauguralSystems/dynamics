@@ -1,5 +1,16 @@
 ## Done when
 
+### Deviations from the issue
+
+The orchestrator's briefs authorized both scope changes on 2026-10-20. First,
+Family B is 160 systems rather than the issue's 1,000: seven sweeps cost
+`7*160*20*80000=1,792,000,000` steps and the A work costs 4,840,000, so at
+the remeasured 249,956.759 steps/s the total is 7,188.60 seconds (1.997 h);
+161 rows would take 2.009 h and exceeds the two-CPU-hour rule. Second, item 4
+says “the observer gates and a Hermite Sigma estimator measures,” replacing
+the issue's “observer-derived amplitude,” because the observer exposes a
+predicate verdict but no amplitude value.
+
 This is a **pre-registration**, not an implementation.  The commands below are
 the frozen CLI contract for the later builder; `tests/lienard_55.py` and
 `lienard.eigs` deliberately do not exist in this change.  A command passes only
@@ -95,17 +106,43 @@ quintic leading coefficient satisfies those hypotheses.  This is why negative
    separately scoped reaction-network controls are excluded by name.  Success
    is exit 0 and `PASS item2 population=3317 diverging=0`.
 
-3. **The theorem-backed cycle-count oracle (160 systems).**  Run exactly
-   `python3 tests/lienard_55.py item3 --manifest prereg/55/manifest.json`.
-   For every row of `family_b.csv`, run the 20-point grid both forward and under the reversed vector field, retain only runs
-   whose observer gate says settled-cycle as defined below, estimate section
-   fixed points from the final window, and apply the frozen complete-link
-   clustering rule.  The distinct cluster count must be `<=2` for every
-   system; threshold: zero systems reaching 3.  Merge the forward and reverse
-   estimates before clustering: a forward cluster and reverse cluster whose
-   union has complete-link span `<=0.01` is one semi-stable-cycle candidate,
-   never two cycles.  Success is exit 0 and
-   `PASS item3 population=160 starts=3200 directions=2 runs=6400 max_clusters<=2 reaches_3=0`.
+3. **The theorem-backed cycle-count oracle (160 systems, non-vacuous).** Run
+   exactly `python3 tests/lienard_55.py item3 --manifest prereg/55/manifest.json`.
+   Every Family-B row runs the 20 starts forward and reversed. The observer
+   gate must say settled-cycle, the final-window Hermite estimate must pass its
+   settledness test, and forward and reverse estimates are pooled before the
+   frozen complete-link clustering. A union spanning `<=0.01` is one candidate.
+
+   Before Family B is eligible, the **same gate, estimator, settledness test,
+   and clustering code** runs positive controls. Instance A must give exactly
+   two clusters: outer `3.922873870354` from forward runs and inner
+   `1.487060441512` from reverse runs. The odd cubic van der Pol control
+   `F=x^3/3-x` must give exactly one cluster at `1.919275835629`. Every
+   representative must be within `1e-9` of its oracle and every span `<=0.01`.
+   A wrong count, direction, span, or amplitude fails. The van der Pol count is
+   the classical Liénard uniqueness theorem (A. Liénard, *Rev. Gén. de
+   l'Électricité* 23 (1928), pp. 901–912, 946–954); `oracle.py` derives its
+   amplitude at both effort levels.
+
+   Coverage denominators are frozen in
+   `evidence/bar-rewrite-55-fix2/oracle_settled.csv`. For each start/direction,
+   SciPy DOP853 (`rtol=1e-10`, `atol=1e-12`, `max_step=0.5`) integrates through
+   the transient and locates the same positive-x Sigma event. “Oracle-settled”
+   means at least four crossings in `[200,300]` and the chronological crossing-
+   half medians differ by `<=1e-7`; reverse box escape is not settled. For each
+   row and direction having a nonzero denominator, the pipeline must retain at
+   least `ceil(0.90*oracle_settled)` runs. Empty denominators impose no
+   numerator requirement but are reported. Both positive controls require
+   100% retention; 90% leaves two starts of twenty for boundary/transient
+   sensitivity while preventing wholesale rejection from passing.
+
+   The terminal record reports `settled`, `estimator_rejected`, `escaped`,
+   `no_crossings`, and `clustered_runs`, separately for forward/reverse. Here
+   `estimator_rejected` includes either a non-settled observer gate or failure
+   of the `1e-7` estimator settledness test after crossings exist. The
+   first four partition all 3,200 runs in each direction and
+   `clustered_runs=settled`. Success is exit 0 and
+   `PASS item3 population=160 starts=3200 directions=2 runs=6400 forward_settled=<n> forward_estimator_rejected=<n> forward_escaped=<n> forward_no_crossings=<n> forward_clustered_runs=<n> reverse_settled=<n> reverse_estimator_rejected=<n> reverse_escaped=<n> reverse_no_crossings=<n> reverse_clustered_runs=<n> coverage_floor=0.90 controls=A:2,vdp:1 max_clusters<=2 reaches_3=0`.
 
 4. **Outer section amplitude (one orbit, observer only gates).**  Run exactly
    `python3 tests/lienard_55.py item4 --manifest prereg/55/manifest.json`.
@@ -124,7 +161,8 @@ quintic leading coefficient satisfies those hypotheses.  This is why negative
    and build exactly `make -C "$scratch" gfx CC=gcc`.  Run item 3 once using
    that rebuilt binary; never edit the committed source or the normal pinned
    installation.  Normal depth is 10 and fault depth is 4.  The control passes
-   only after a **completed** item-3 run prints `reaches_3>=1`.  A crash,
+   only after a **completed** item-3 run prints `reaches_3>=1` and passes the
+   same per-row, per-direction 90% oracle-coverage gate. A crash,
    refusal, undefined-name error, nonzero run without that record, or any
    incomplete run fails item 5; no expected failure is converted to success.
    Output contract:
@@ -151,6 +189,10 @@ quintic leading coefficient satisfies those hypotheses.  This is why negative
    starts, while items 1–4 also pass.  The two `1e-6` values belong only to the
    baseline label, never the observer verdict path.  Success is exit 0 and
    `PASS item7 population=117 graded=116 observer_misses<=baseline_misses items1_4=PASS`.
+   The baseline outer fixed point starts at `(4,0)`, repeatedly applies the same
+   DOP853 return map (a `1e-6` kick disarms the time-zero event), and stops at
+   `abs(P(x_n)-x_n)<1e-12` with a 10,000-iteration cap. The returned `P(x_n)`
+   is the baseline value; return integration uses `max_step=0.05`.
 
 ### Observer verdict contract
 
@@ -180,7 +222,10 @@ oscillating, diverging, improving, then the rest bands
 harness adds no constant to that path and does not call any threshold setter;
 these release constants are recorded, not tuned.  Item 5 changes the compile-
 time constant in a disposable rebuild because no runtime builtin exists at
-the pin.
+the pin. “No hand-set tolerance” applies only to this observer-verdict path.
+The estimator's `1e-7` settledness threshold and clustering's `0.01` span
+belong solely to the measurement path; neither changes or interprets the
+observer verdict.
 
 ### Closest calls
 
@@ -190,7 +235,7 @@ the pin.
   points outside the band) and `1.55` (`4.232%` above; `2.232` points outside).
 * The oracle effort levels print the same 12 decimals; the acceptance allowance
   is absolute `1e-9` (three decimal orders looser than the printed agreement).
-* The RK4 stability products are `0.1620` for Instance A and at most
+* The checked Instance-A stability product is `0.941` and at most
   `0.252789708` across the resized Family B per-row boxes, against the
   pre-registered heuristic ceiling 1.
 * Item 4's widest allowed outer-amplitude error is `0.019614369352`; its
@@ -208,7 +253,7 @@ the pin.
 | coefficient data | `prereg/55/family_b.csv`; SHA-256 `aeda5368669b07a926535bfece612d9543b7d6c9b2cd19d647d69fd59e729eff` |
 | RK4, A | fixed `h=0.01`; `T=400` = 40,000 steps; transient `T=300` = 30,000; measurement window `T=100` = 10,000 |
 | RK4, B | fixed `h=0.005`; `T=400` = 80,000 steps; transient `T=300` = 60,000; measurement window `T=100` = 20,000 |
-| stability derivation, A | asserted visited `|x|<=4.3`; `max|F'|<=16.20`, hence `h max|F'|<=0.1620` |
+| stability derivation, A | generator checks all 117 starts both ways; forward `|x|<=6.000`, outward-rounded `|y|<=5.631`; reverse stops at that box; exact `max|F'|=94.1`, product `0.941` |
 | stability derivation, B | per-row 10%-margin boxes frozen in `evidence/bar-rewrite-55-fix/family_b_envelope.csv` (SHA-256 `735a329e1019786e2851c96b429e3f6e128622353c86efe0e4eba6bdc1652e6d`); per-row triangle maxima of `|F'|` give a worst product below 1; exceeding the applicable box fails loudly |
 | RK4 convergence | Instance-A outer section `x*` at `h` and `h/2` differs by `<=1e-7` |
 | section estimator | cubic Hermite interpolation for every Sigma estimate in items 3, 4, and item 7's observer side: `H(s)=(2s^3-3s^2+1)z0+(s^3-2s^2+s)h f(z0)+(-2s^3+3s^2)z1+(s^3-s^2)h f(z1)`; bisect `H_y(s)=0` on `s in [0,1]` for the direction-appropriate sign change, then require `H_x(s)>0`; final-window median; successive median halves within `1e-7` |
@@ -219,5 +264,6 @@ the pin.
 | planted fault | scratch rebuild changes only `#define OBSERVER_WINDOW_N 10` to `4`, once; completed item 3 must report `reaches_3>=1` |
 | trace | `EIGS_TRACE`, then `EIGS_REPLAY` plus `EIGS_REPLAY_STRICT=1`; occurrence window 256; compare canonical verdict lines |
 | baseline | SciPy DOP853, `rtol=1e-10`, `atol=1e-12`, event `y=0,x>0,direction=-1`, same grid/time split; classifier tolerance `1e-6` |
-| compute budget | conservative 250,000 RK4 steps/s; 7 B sweep-equivalents plus A and `h/2` = 1,796,840,000 steps = 7,187.36 s = 1.996 CPU-h; `N=160` is the largest integer fitting 2 h |
+| compute budget | measured maximum of five interpreted runs 249,956.759 steps/s; 1,796,840,000 steps = 7,188.60 s = 1.997 CPU-h; `N=160` largest fitting 2 h |
+| rate invocation | binary `/tmp/eigenscript/build/release/eigenscript`, SHA-256 `c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6`; workload SHA-256 `37feca5eb2f13e47d8e1dc59df409525502a16f95764284a8e3764959f8f3f88`; `env EIGS_JIT_OFF=1 /tmp/eigenscript/build/release/eigenscript prereg/55/step_rate.eigs`; Python `time.monotonic_ns` around `subprocess.run`, 5 repetitions, maximum throughput; Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz |
 | companion networks | moved to its own future issue/pre-registration; no network population or planted reaction is in items 1–7 |

@@ -43,7 +43,8 @@
         "rtol": 1e-13,
         "atol": 1e-15
       }
-    ]
+    ],
+    "van_der_pol": 1.919275835629
   },
   "instance_a": {
     "coefficients": [
@@ -72,9 +73,11 @@
       "window": 100.0,
       "window_steps": 10000
     },
-    "visited_x_bound": 4.3,
-    "derivative_bound": 16.2,
-    "stability_product": 0.162
+    "visited_x_bound": 6.0,
+    "derivative_bound": 94.1,
+    "stability_product": 0.941,
+    "visited_y_bound": 5.631,
+    "envelope_generator": "prereg/55/instance_a_envelope.py"
   },
   "family_b": {
     "rng": "numpy.default_rng(55)",
@@ -132,6 +135,23 @@
       "max_stability_product": 0.252789708,
       "require_each_product_le": 1.0,
       "table_sha256": "735a329e1019786e2851c96b429e3f6e128622353c86efe0e4eba6bdc1652e6d"
+    },
+    "oracle_coverage": {
+      "generator": "prereg/55/oracle_settled.py",
+      "table": "prereg/55/evidence/bar-rewrite-55-fix2/oracle_settled.csv",
+      "table_sha256": "4f0ecb1b4b0a0c9f25a9226e5e313006fbfdb7ed27b99e8b4095ecf0522e7bc7",
+      "method": "SciPy DOP853",
+      "rtol": 1e-10,
+      "atol": 1e-12,
+      "max_step": 0.5,
+      "window": [
+        200,
+        300
+      ],
+      "minimum_crossings": 4,
+      "median_halves_tolerance": 1e-07,
+      "retention_floor": 0.9,
+      "scope": "each row and direction with nonzero denominator"
     }
   },
   "estimator": {
@@ -169,18 +189,33 @@
     "method": "DOP853",
     "rtol": 1e-10,
     "atol": 1e-12,
-    "classifier_tolerance": 1e-06
+    "classifier_tolerance": 1e-06,
+    "fixed_point": {
+      "seed": 4.0,
+      "map": "positive-x y=0 direction=-1 first return",
+      "kick_time": 1e-06,
+      "max_step": 0.05,
+      "stopping_delta": 1e-12,
+      "maximum_iterations": 10000
+    }
   },
   "compute": {
-    "budget_rate": 250000,
+    "budget_rate": 249956.759,
     "family_rows": 160,
     "sweep_equivalents": 7,
     "steps_per_sweep": 256000000,
     "instance_steps": 4840000,
     "total_steps": 1796840000,
-    "seconds": 7187.36,
-    "cpu_hours": 1.9964888889,
-    "sizing_rule": "largest integer N such that (7*N*20*80000+4840000)/250000/3600 <= 2"
+    "seconds": 7188.603369593218,
+    "cpu_hours": 1.996834,
+    "sizing_rule": "largest integer N such that (7*N*20*80000+4840000)/249956.759/3600 <= 2",
+    "repetitions": 5,
+    "statistic": "maximum throughput",
+    "timing": "Python time.monotonic_ns around subprocess.run",
+    "binary": "/tmp/eigenscript/build/release/eigenscript",
+    "binary_sha256": "c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6",
+    "workload_sha256": "37feca5eb2f13e47d8e1dc59df409525502a16f95764284a8e3764959f8f3f88",
+    "cpu_model": "Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz"
   },
   "companion_network_row": "moved to a separate future issue",
   "after_eigenscript_1758_round3": "follow-up only",
@@ -203,5 +238,35 @@
       "F.degree \u2264 5"
     ],
     "statement": "(\u2200 F : Polynomial \u211d, F.degree \u2264 5 \u2192 {C : Set Plane | IsLimitCycle F C}.encard \u2264 2) \u2227 (\u2203 F : Polynomial \u211d, F.degree \u2264 5 \u2227 {C : Set Plane | IsLimitCycle F C}.encard = 2)"
-  }
+  },
+  "positive_controls": {
+    "must_precede_family_b": true,
+    "same_item3_pipeline": true,
+    "instance_a": {
+      "clusters": 2,
+      "forward_outer": 3.922873870354,
+      "reverse_inner": 1.487060441512
+    },
+    "van_der_pol": {
+      "F": "x^3/3-x",
+      "clusters": 1,
+      "amplitude": 1.919275835629
+    },
+    "amplitude_tolerance": 1e-09,
+    "maximum_cluster_span": 0.01,
+    "required_retention": 1.0
+  },
+  "deviations": [
+    {
+      "change": "Family B 1000 to 160 by compute-sizing rule",
+      "authorized_by": "orchestrator briefs",
+      "date": "2026-10-20"
+    },
+    {
+      "change": "observer-derived amplitude to observer gate plus Hermite Sigma estimator",
+      "reason": "observer exposes no amplitude",
+      "authorized_by": "orchestrator briefs",
+      "date": "2026-10-20"
+    }
+  ]
 }

@@ -1,0 +1,11 @@
+binary=/tmp/eigenscript/build/release/eigenscript
+c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6  /tmp/eigenscript/build/release/eigenscript
+37feca5eb2f13e47d8e1dc59df409525502a16f95764284a8e3764959f8f3f88  prereg/55/step_rate.eigs
+cpu_model=Intel(R) Xeon(R) CPU E5-2673 v4 @ 2.30GHz
+invocation=env EIGS_JIT_OFF=1 /tmp/eigenscript/build/release/eigenscript prereg/55/step_rate.eigs
+timing=Python time.monotonic_ns around subprocess.run repetitions=5 statistic=maximum measured rate
+rep=1 elapsed_ns=4391759667 rate=227699.163 stdout=RK4_STEPS 1000000 FINAL -2.42092166462211e-322 1.67982319586024e-322
+rep=2 elapsed_ns=4079366289 rate=245136.114 stdout=RK4_STEPS 1000000 FINAL -2.42092166462211e-322 1.67982319586024e-322
+rep=3 elapsed_ns=4174538485 rate=239547.438 stdout=RK4_STEPS 1000000 FINAL -2.42092166462211e-322 1.67982319586024e-322
+rep=4 elapsed_ns=4000691981 rate=249956.759 stdout=RK4_STEPS 1000000 FINAL -2.42092166462211e-322 1.67982319586024e-322
+rep=5 elapsed_ns=4077811509 rate=245229.579 stdout=RK4_STEPS 1000000 FINAL -2.42092166462211e-322 1.67982319586024e-322

@@ -1,0 +1,5 @@
+positive_control_required_retention=100%
+family_b_floor=90%
+justification=Both oracle-known controls must retain every qualifying run. A 90% Family-B floor allows at most two of twenty oracle-settled starts per row/direction to be lost to boundary/transient sensitivity, while making reject-all and materially selective gates fail.
+rule=for each row and direction with denominator>0 require retained>=ceil(0.90*oracle_settled)
+item5=the identical rule applies to the planted-window item-3 run

@@ -1,0 +1,12 @@
+instance_a_grid count=117 start=0.20 stop=6.00 step=0.05
+gray_band=[1.50]
+gray_member=1.50 relative_margin=0.870%
+nearest_graded=1.45 relative_margin=2.492% outside_band=0.492_percentage_points
+nearest_graded=1.55 relative_margin=4.232% outside_band=2.232_percentage_points
+family_b_grid count=20 start=0.25 stop=5.00 step=0.25
+instance_a_checked_box_x=6.000 exact_max_abs_Fprime=94.1 h=0.01 product=0.941
+family_b_stability source=evidence/bar-rewrite-55-fix/family_b_envelope.csv per_row_boxes=160 ceiling=1
+budget population=160 amplitudes=20 steps_per_run=80000 steps_per_sweep=256000000
+budget sweeps=7 plus_instance_steps=4840000 total_steps=1796840000
+budget measured_maximum_rate=249956.759 step/s seconds=7188.603369593218321413745007 cpu_hours=1.997
+sizing_rule=largest_N_with_cpu_hours<=2 selected_N=160 next_N=161_exceeds=True

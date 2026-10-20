@@ -1,0 +1,4 @@
+rows=160 starts_per_row=20 directions=forward,reverse reverse_completed=1075 reverse_safety_stops=2125
+max_abs_x=7.441071087 row=135 max_abs_y=9.995752097 row=22
+margin=10% max_box_x=8.186 max_box_y=10.996
+max_stability_product=0.252789708 row=135 all_le_1=True

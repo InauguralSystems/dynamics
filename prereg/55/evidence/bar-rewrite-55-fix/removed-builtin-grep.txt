@@ -1,0 +1,2 @@
+$ git grep -n 'set_observer_window' -- prereg/55/DONE_WHEN.md prereg/55/manifest.json
+exit=1 matches=0

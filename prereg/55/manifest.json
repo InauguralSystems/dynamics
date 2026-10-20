@@ -79,7 +79,7 @@
   "family_b": {
     "rng": "numpy.default_rng(55)",
     "seed": 55,
-    "count": 350,
+    "count": 160,
     "ranges": {
       "a1": [
         -0.5,
@@ -103,7 +103,7 @@
       ]
     },
     "data": "prereg/55/family_b.csv",
-    "sha256": "ada17452ff5fc1b4cba290ee65a62105d09c5c4bee54073d8cfed88ef8017211",
+    "sha256": "aeda5368669b07a926535bfece612d9543b7d6c9b2cd19d647d69fd59e729eff",
     "grid": {
       "start": 0.25,
       "stop": 5.0,
@@ -119,25 +119,46 @@
       "window": 100.0,
       "window_steps": 20000
     },
-    "visited_x_bound": 8.0,
-    "derivative_bound": 124.34,
-    "stability_product": 0.6217
+    "envelope": {
+      "directions": [
+        "forward",
+        "reverse"
+      ],
+      "starts_per_row": 20,
+      "table": "prereg/55/evidence/bar-rewrite-55-fix/family_b_envelope.csv",
+      "margin": 0.1,
+      "box_scope": "per-row abs(x),abs(y)",
+      "reverse_escape": "reject immediately before leaving box",
+      "max_stability_product": 0.252789708,
+      "require_each_product_le": 1.0,
+      "table_sha256": "735a329e1019786e2851c96b429e3f6e128622353c86efe0e4eba6bdc1652e6d"
+    }
   },
   "estimator": {
-    "crossing_location": "linear",
+    "crossing_location": "cubic Hermite endpoint states and endpoint vector fields",
+    "formula": "H(s)=(2s^3-3s^2+1)z0+(s^3-2s^2+s)h*f(z0)+(-2s^3+3s^2)z1+(s^3-s^2)h*f(z1)",
+    "root": "bisection of H_y(s)=0 on [0,1] for direction-appropriate bracket; require H_x(s)>0",
+    "used_by": [
+      "item3",
+      "item4",
+      "item7 observer"
+    ],
     "aggregate": "median",
     "successive_tolerance": 1e-07
   },
   "clustering": {
     "method": "sorted greedy complete-link span",
-    "maximum_span": 0.01
+    "maximum_span": 0.01,
+    "direction_rule": "pool forward and reverse estimates; union within maximum_span is one semi-stable/double-count cluster"
   },
-  "reverse_safety_box": 8.0,
   "forward_safety_box": 1000000.0,
   "fault": {
-    "method": "scratch source substitution",
-    "normal_window": 10,
-    "shrunk_window": 4
+    "method": "scratch rebuild of pinned runtime",
+    "patch": "#define OBSERVER_WINDOW_N 10 -> #define OBSERVER_WINDOW_N 4 in src/eigenscript.h",
+    "build_command": "make -C \"$scratch\" gfx CC=gcc",
+    "runs": 1,
+    "pass_only_if": "completed item3 prints reaches_3>=1",
+    "crash_refusal_undefined_or_incomplete": "fail"
   },
   "trace": {
     "strict_replay": true,
@@ -151,11 +172,15 @@
     "classifier_tolerance": 1e-06
   },
   "compute": {
-    "measured_steps_per_second": 257533,
     "budget_rate": 250000,
-    "total_steps": 1684840000,
-    "seconds": 6739.36,
-    "cpu_hours": 1.872
+    "family_rows": 160,
+    "sweep_equivalents": 7,
+    "steps_per_sweep": 256000000,
+    "instance_steps": 4840000,
+    "total_steps": 1796840000,
+    "seconds": 7187.36,
+    "cpu_hours": 1.9964888889,
+    "sizing_rule": "largest integer N such that (7*N*20*80000+4840000)/250000/3600 <= 2"
   },
   "companion_network_row": "moved to a separate future issue",
   "after_eigenscript_1758_round3": "follow-up only",
@@ -166,5 +191,17 @@
     "outer_relative_error": 0.005,
     "rk4_h_half_delta": 1e-07,
     "gray_relative": 0.02
+  },
+  "theorem_oracle": {
+    "source": "openai/math family 143 Lean comparator only",
+    "artifact": "lean/ComparatorChallenges/QuinticLienard.lean",
+    "url": "https://raw.githubusercontent.com/openai/math/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/ComparatorChallenges/QuinticLienard.lean",
+    "commit": "1581d4cbdd69a0faf34b2089614fe2a814316a6a",
+    "sha256": "cb34f454db432f46902a17036812adde4c73fe276d6d7a8a8b21797ace40d000",
+    "hypotheses": [
+      "F : Polynomial \u211d",
+      "F.degree \u2264 5"
+    ],
+    "statement": "(\u2200 F : Polynomial \u211d, F.degree \u2264 5 \u2192 {C : Set Plane | IsLimitCycle F C}.encard \u2264 2) \u2227 (\u2203 F : Polynomial \u211d, F.degree \u2264 5 \u2227 {C : Set Plane | IsLimitCycle F C}.encard = 2)"
   }
 }

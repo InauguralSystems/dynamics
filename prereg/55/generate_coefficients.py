@@ -25,7 +25,7 @@ def payload(n: int) -> bytes:
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--count", type=int, default=350)
+    ap.add_argument("--count", type=int, default=160)
     ap.add_argument("--output", type=Path, default=Path(__file__).with_name("family_b.csv"))
     ap.add_argument("--check", action="store_true")
     args = ap.parse_args()

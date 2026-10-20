@@ -1,0 +1,7 @@
+$ python3 measure_family_b.py --population prereg/55/family_b.csv.original-350 --h 0.005 --duration 400 --starts 0.25:5.00:0.25
+rows=350 starts_per_row=20
+row=22 max_abs_x=8.279
+row=121 max_abs_x=8.134
+max_over_rows_max_abs_x_or_y=14.559
+actual_max_h_times_abs_Fprime=0.0956
+note=the prior coefficient-range triangle product 0.62170 was loose

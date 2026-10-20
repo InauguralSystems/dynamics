@@ -1,0 +1,11 @@
+$ commit=$(curl -fsSL https://api.github.com/repos/openai/math/commits/main | python3 -c 'import json,sys; print(json.load(sys.stdin)["sha"])')
+$ url="https://raw.githubusercontent.com/openai/math/$commit/lean/ComparatorChallenges/QuinticLienard.lean"; curl -fsSL "$url" -o QuinticLienard.lean; printf 'commit=%s\nurl=%s\n' "$commit" "$url"; sha256sum QuinticLienard.lean
+commit=1581d4cbdd69a0faf34b2089614fe2a814316a6a
+url=https://raw.githubusercontent.com/openai/math/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/ComparatorChallenges/QuinticLienard.lean
+cb34f454db432f46902a17036812adde4c73fe276d6d7a8a8b21797ace40d000  QuinticLienard.lean
+
+Exact statement and every hypothesis (the sole implication hypothesis is F.degree ≤ 5):
+theorem main :
+    (∀ F : Polynomial ℝ, F.degree ≤ 5 → {C : Set Plane | IsLimitCycle F C}.encard ≤ 2) ∧
+    (∃ F : Polynomial ℝ, F.degree ≤ 5 ∧ {C : Set Plane | IsLimitCycle F C}.encard = 2) := by
+  sorry

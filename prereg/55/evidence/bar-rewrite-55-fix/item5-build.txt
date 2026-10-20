@@ -1,0 +1,6 @@
+$ scratch=$(mktemp -d); git clone https://github.com/InauguralSystems/EigenScript.git "$scratch"; git -C "$scratch" checkout 4a3a5c1941568e9bc562c7c8221cff22dc8ba697; sed -i 's/^#define OBSERVER_WINDOW_N 10$/#define OBSERVER_WINDOW_N 4/' "$scratch/src/eigenscript.h"; git -C "$scratch" diff -- src/eigenscript.h; make -C "$scratch" gfx CC=gcc
+The only permitted patch is:
+-#define OBSERVER_WINDOW_N 10
++#define OBSERVER_WINDOW_N 4
+Build command: make -C "$scratch" gfx CC=gcc
+Run exactly once. A completed item-3 result containing reaches_3>=1 is required; crash, refusal, undefined name, or incomplete execution fails.

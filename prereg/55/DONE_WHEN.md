@@ -38,7 +38,25 @@ Its exact theorem (and its only hypothesis, `F.degree ≤ 5`) is:
 theorem main :
     (∀ F : Polynomial ℝ, F.degree ≤ 5 → {C : Set Plane | IsLimitCycle F C}.encard ≤ 2) ∧
     (∃ F : Polynomial ℝ, F.degree ≤ 5 ∧ {C : Set Plane | IsLimitCycle F C}.encard = 2) := by
+  sorry
 ```
+
+**Why a `sorry` statement is the checked theorem (orchestrator, 2026-10-20).**
+That file is the TRUSTED STATEMENT of openai/math's comparator setup, and its
+body is `sorry` by design. The proof lives elsewhere, and is paired with the
+statement by `lean/ComparatorChallenges/QuinticLienard.json` at the same commit:
+- `solution_module` is `OAI.Analysis.LienardCycles.Main`;
+- `theorem_names` is `["OAI.QuinticLienard.main"]`;
+- `definition_names` is empty, so the solution cannot redefine `IsLimitCycle`
+  or the vector field;
+- `permitted_axioms` is `propext`, `Quot.sound` and `Classical.choice`, which
+  excludes `sorryAx`.
+
+`lean/formalization.yaml` lists that config, declaration and file among the
+repo's comparator entries. This pre-registration relies on the repo's
+comparator record: the Mathlib build was not re-run here. Not retracted at
+1581d4cb: the `LienardCycles` tree has only its 2026-10-06 initial commit.
+The builder re-checks the retraction status before running item 3.
 
 Here `vectorField F z := (z.2 - F.eval z.1, -z.1)` and `IsLimitCycle` means an
 isolated set-range of a nonconstant periodic global solution, exactly as quoted

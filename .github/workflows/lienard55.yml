@@ -1,9 +1,11 @@
 name: Lienard issue 55 long acceptance
 
 on:
-  push:
-    # The PR branch only: `work` was the Cloud worker's internal branch name, which never exists here.
-    branches: [cloud-55]
+  # On demand only: a frozen pre-registration (prereg/55/DONE_WHEN.md) whose
+  # registered outcome is banked on #55. Re-run it when its inputs change, for
+  # example when EigenScript fixes the observer verdicts behind items 2 and 3
+  # (EigenScript#1891, #1751). The run takes hours, so no push or PR triggers it.
+  workflow_dispatch:
 
 permissions:
   contents: read

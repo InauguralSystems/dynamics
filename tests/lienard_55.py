@@ -133,11 +133,19 @@ def pipeline(cs,starts,h,steps,sample,cross_from):
 def item3(m,limit):
     # Positive controls use precisely pipeline(), as does Family B.
     a=m["instance_a"]; sa=[.2+.05*i for i in range(117)]
-    ast,ac,_=pipeline([a["coefficients"]],sa,.01,40000,100,30000)
-    vst,vc,_=pipeline([[-1,0,1/3,0,0]],sa,.01,40000,100,30000)
+    # The controls validate the Family-B numerical pipeline, including its
+    # integration cadence, rather than Instance A's otherwise-frozen cadence.
+    ast,ac,_=pipeline([a["coefficients"]],sa,.005,80000,200,60000)
+    vst,vc,_=pipeline([[-1,0,1/3,0,0]],sa,.005,80000,200,60000)
     if len(ac)!=2 or len(vc)!=1: die("positive-control cluster count")
     reps=[median(x) for x in ac]; vr=median(vc[0])
-    if max(abs(reps[0]-m["oracle"]["inner"]),abs(reps[1]-m["oracle"]["outer"]),abs(vr-m["oracle"]["van_der_pol"]))>1e-9: die(f"positive-control amplitude A={reps} vdp={vr}")
+    controls=(("A-inner",reps[0],m["oracle"]["inner"]),
+              ("A-outer",reps[1],m["oracle"]["outer"]),
+              ("van-der-Pol",vr,m["oracle"]["van_der_pol"]))
+    for name,rep,oracle in controls:
+        print(f"CONTROL {name} representative={rep:.12f} oracle={oracle:.12f} absolute_error={abs(rep-oracle):.12g}")
+    if max(abs(rep-oracle) for _,rep,oracle in controls)>1e-9:
+        die("positive-control amplitude exceeds 1e-9")
     cs=coeffs(m); cs=cs[:limit] if limit else cs; b=m["family_b"]
     st,cl,ret=pipeline(cs,[.25+.25*i for i in range(20)],.005,80000,200,60000)
     reaches=sum(len(x)>=3 for x in [cl])

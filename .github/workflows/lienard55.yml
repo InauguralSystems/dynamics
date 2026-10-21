@@ -2,9 +2,13 @@ name: Lienard issue 55 long acceptance
 
 on:
   # On demand only: a frozen pre-registration (prereg/55/DONE_WHEN.md) whose
-  # registered outcome is banked on #55. Re-run it when its inputs change, for
-  # example when EigenScript fixes the observer verdicts behind items 2 and 3
-  # (EigenScript#1891, #1751). The run takes hours, so no push or PR triggers it.
+  # registered outcome is banked on #55. Re-run it when an input changes, for
+  # example when EigenScript fixes the sign-blind `diverging` behind item 2
+  # (EigenScript#1891). Item 3 cannot pass under this frozen bar: its
+  # oracle-settled rule counts runs that decay to the origin as settled (#59),
+  # so the positive controls cannot reach their required 100% retention. A
+  # corrected bar is a new pre-registration. The run takes hours, so no push
+  # or PR triggers it.
   workflow_dispatch:
 
 permissions:

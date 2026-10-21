@@ -12,6 +12,7 @@ from statistics import median
 
 import numpy as np
 from scipy.integrate import solve_ivp
+from multiprocessing import Pool
 
 ROOT = Path(__file__).resolve().parents[1]
 PIN_SHA256 = "c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6"
@@ -142,16 +143,41 @@ def pipeline(cs,starts,h,steps,sample,cross_from,boxes=None):
     row_clusters=[clusters(values[0][r]+values[1][r]) for r in range(len(cs))]
     return stats,row_clusters,retained,values
 
+def control_settled(c, starts, box):
+    """Oracle-settled counts [forward, reverse] for one positive control.
+
+    The denominator of the controls' required retention: DONE_WHEN.md item 3
+    applies its retention floors to oracle-settled runs, and the controls'
+    floor is ``positive_controls.required_retention``.  The rule is the frozen
+    one that produced Family B's denominators, imported rather than copied.
+    """
+    sys.path.insert(0, str(ROOT/"prereg/55"))
+    from oracle_settled import one
+    jobs=[(x,c,rev,box[0],box[1]) for rev in (False,True) for x in starts]
+    with Pool() as pool: q=pool.starmap(one,jobs)
+    return [sum(q[:len(starts)]),sum(q[len(starts):])]
+
 def item3(m,limit):
     # Positive controls use precisely pipeline(), as does Family B.
     a=m["instance_a"]; sa=[.2+.05*i for i in range(117)]
     # The controls validate the Family-B numerical pipeline, including its
     # integration cadence, rather than Instance A's otherwise-frozen cadence.
-    ast,ac,aret,avals=pipeline([a["coefficients"]],sa,.005,80000,200,60000)
-    vst,vc,vret,vvals=pipeline([[-1,0,1/3,0,0]],sa,.005,80000,200,60000)
+    # Instance A's reverse runs stop at its registered box; van der Pol has none
+    # registered, so it keeps the template's 1e6 escape.
+    box_a=[a["visited_x_bound"],a["visited_y_bound"]]; vdp=[-1,0,1/3,0,0]
+    ast,ac,aret,avals=pipeline([a["coefficients"]],sa,.005,80000,200,60000,boxes=[box_a])
+    vst,vc,vret,vvals=pipeline([vdp],sa,.005,80000,200,60000)
     if len(ac[0])!=2 or len(vc[0])!=1: die("positive-control cluster count")
-    if aret != [[len(sa)],[len(sa)]] or vret != [[len(sa)],[len(sa)]]:
-        die("positive-control retention is not 100%")
+    # Retention is counted against the oracle-settled runs, never the starts: a
+    # start inside Instance A's inner cycle decays to the origin going forward,
+    # and van der Pol's cycle repels in reverse time.
+    need=m["positive_controls"]["required_retention"]
+    den={"A":control_settled(a["coefficients"],sa,box_a),"van-der-Pol":control_settled(vdp,sa,[1e6,1e6])}
+    got={"A":[aret[0][0],aret[1][0]],"van-der-Pol":[vret[0][0],vret[1][0]]}
+    short=[f"{k} {d} retained={got[k][j]} oracle_settled={den[k][j]}"
+           for k in den for j,d in enumerate(("forward","reverse"))
+           if got[k][j] < math.ceil(need*den[k][j])]
+    if short: die(f"positive-control retention below {need:.0%}: "+"; ".join(short))
     # Instance A's forward runs must supply only the outer candidate and its
     # reverse runs only the inner candidate; a pooled count alone is weaker.
     if len(clusters(avals[0][0]))!=1 or len(clusters(avals[1][0]))!=1:

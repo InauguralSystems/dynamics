@@ -1,0 +1,65 @@
+# Frozen issue-55 Lienard RK4 workload.  The Python harness replaces the
+# double-underscore tokens with manifest-derived literals in a temporary copy.
+coeffs is __COEFFS__
+starts is __STARTS__
+h is __H__
+steps is __STEPS__
+sample_steps is __SAMPLE_STEPS__
+direction is __DIRECTION__
+crossing_from is __CROSSING_FROM__
+
+for row in range of (len of coeffs):
+    c is coeffs[row]
+    for si in range of (len of starts):
+        x is starts[si]
+        y is 0.0
+        E is ((x*x)+(y*y))/2.0
+        i is 0
+        escaped is 0
+        loop while i < steps:
+            px is x
+            py is y
+            unobserved:
+                f1 is c[0]*x+c[1]*x*x+c[2]*x*x*x+c[3]*x*x*x*x+c[4]*x*x*x*x*x
+                k1x is direction*(y-f1)
+                k1y is direction*(0.0-x)
+                qx is x+0.5*h*k1x
+                qy is y+0.5*h*k1y
+                f2 is c[0]*qx+c[1]*qx*qx+c[2]*qx*qx*qx+c[3]*qx*qx*qx*qx+c[4]*qx*qx*qx*qx*qx
+                k2x is direction*(qy-f2)
+                k2y is direction*(0.0-qx)
+                qx is x+0.5*h*k2x
+                qy is y+0.5*h*k2y
+                f3 is c[0]*qx+c[1]*qx*qx+c[2]*qx*qx*qx+c[3]*qx*qx*qx*qx+c[4]*qx*qx*qx*qx*qx
+                k3x is direction*(qy-f3)
+                k3y is direction*(0.0-qx)
+                qx is x+h*k3x
+                qy is y+h*k3y
+                f4 is c[0]*qx+c[1]*qx*qx+c[2]*qx*qx*qx+c[3]*qx*qx*qx*qx+c[4]*qx*qx*qx*qx*qx
+                k4x is direction*(qy-f4)
+                k4y is direction*(0.0-qx)
+                x is x+h*(k1x+2.0*k2x+2.0*k3x+k4x)/6.0
+                y is y+h*(k1y+2.0*k2y+2.0*k3y+k4y)/6.0
+            i is i+1
+            if (i % sample_steps) == 0:
+                E is ((x*x)+(y*y))/2.0
+            if i > crossing_from:
+                hit is 0
+                if direction == 1:
+                    if py > 0.0:
+                        if y <= 0.0:
+                            hit is 1
+                else:
+                    if py < 0.0:
+                        if y >= 0.0:
+                            hit is 1
+                if hit == 1:
+                    print of f"CROSS {row} {si} {px} {py} {x} {y}"
+            if abs of x > 1000000.0:
+                escaped is 1
+                i is steps
+            if abs of y > 1000000.0:
+                escaped is 1
+                i is steps
+        status is report_value of E
+        print of f"VERDICT {row} {si} {status} {escaped} {x} {y}"

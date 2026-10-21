@@ -1,0 +1,44 @@
+name: Lienard issue 55 long acceptance
+
+on:
+  push:
+    branches: [work]
+
+permissions:
+  contents: read
+
+jobs:
+  frozen-long-runs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 340
+    steps:
+      - uses: actions/checkout@v7
+      - name: Install harness dependencies
+        run: python3 -m pip install -r prereg/55/requirements.txt
+      - name: Re-check theorem retraction status
+        run: |
+          set -euo pipefail
+          test "$(curl -fsSL 'https://api.github.com/repos/openai/math/commits?path=lean/OAI/Analysis/LienardCycles&per_page=10' | python3 -c 'import json,sys; x=json.load(sys.stdin); print(len(x)); print(x[0]["commit"]["message"].splitlines()[0], file=sys.stderr)')" = 1
+          curl -fsSL https://raw.githubusercontent.com/openai/math/1581d4cbdd69a0faf34b2089614fe2a814316a6a/lean/ComparatorChallenges/QuinticLienard.lean | sha256sum | grep '^cb34f454db432f46902a17036812adde4c73fe276d6d7a8a8b21797ace40d000 '
+      - name: Build pinned EigenScript
+        run: |
+          set -euo pipefail
+          git clone https://github.com/InauguralSystems/eigenscript.git /tmp/eigenscript
+          git -C /tmp/eigenscript checkout 4a3a5c1941568e9bc562c7c8221cff22dc8ba697
+          make -C /tmp/eigenscript gfx CC=gcc 2>&1 | tee eigenscript-build.log
+          sha256sum /tmp/eigenscript/build/release/eigenscript | tee -a eigenscript-build.log
+          grep '^c5c288bc5907fe323fcaff83ff06c7f50c8d1ca0f860e94d3366c9ad226277d6 ' eigenscript-build.log
+      - name: Frozen item 3
+        run: python3 tests/lienard_55.py item3 --manifest prereg/55/manifest.json 2>&1 | tee item3.log
+      - name: Frozen item 5
+        if: always()
+        run: python3 tests/lienard_55.py item5 --manifest prereg/55/manifest.json 2>&1 | tee item5.log
+      - name: Upload complete logs
+        if: always()
+        uses: actions/upload-artifact@v6
+        with:
+          name: lienard55-complete-logs
+          path: |
+            eigenscript-build.log
+            item3.log
+            item5.log

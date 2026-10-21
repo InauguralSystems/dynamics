@@ -30,16 +30,24 @@ def coeffs(m):
     with p.open() as f:
         return [[float(r[f"a{i}"]) for i in range(1,6)] for r in csv.DictReader(f)]
 
-def render(cs, starts, h, steps, sample, direction=1, crossing_from=10**12):
+def envelope_boxes(m, cs):
+    """Return the registered per-row reverse escape boxes."""
+    table=ROOT/m["family_b"]["envelope"]["table"]
+    if digest(table)!=m["family_b"]["envelope"]["table_sha256"]: die("Family-B envelope SHA-256 mismatch")
+    with table.open() as f: rows=list(csv.DictReader(f))
+    return [[float(r["box_x"]),float(r["box_y"])] for r in rows[:len(cs)]]
+
+def render(cs, starts, h, steps, sample, direction=1, crossing_from=10**12, boxes=None):
     s=(ROOT/"lienard.eigs").read_text()
     vals={"COEFFS":cs,"STARTS":starts,"H":h,"STEPS":steps,"SAMPLE_STEPS":sample,
-          "DIRECTION":direction,"CROSSING_FROM":crossing_from}
+          "DIRECTION":direction,"CROSSING_FROM":crossing_from,
+          "BOXES":boxes or [[1e6,1e6] for _ in cs]}
     for k,v in vals.items(): s=s.replace(f"__{k}__",json.dumps(v,separators=(",",":")))
     return s
 
-def run_eigs(cs, starts, h, steps, sample, direction=1, crossing_from=10**12, env=None):
+def run_eigs(cs, starts, h, steps, sample, direction=1, crossing_from=10**12, env=None, boxes=None):
     with tempfile.NamedTemporaryFile("w",suffix=".eigs",delete=False) as f:
-        f.write(render(cs,starts,h,steps,sample,direction,crossing_from)); name=f.name
+        f.write(render(cs,starts,h,steps,sample,direction,crossing_from,boxes)); name=f.name
     try:
         e=os.environ.copy(); e["EIGS_JIT_OFF"]="1"; e.update(env or {})
         q=subprocess.run([str(binary()),name],text=True,capture_output=True,env=e)
@@ -99,10 +107,12 @@ def item1(m):
 def family(m, limit=None, **kw):
     cs=coeffs(m); cs=cs[:limit] if limit else cs
     b=m["family_b"]; starts=[.25+.25*i for i in range(20)]
-    return cs,run_eigs(cs,starts,b["rk4"]["h"],b["rk4"]["steps"],b["eigenscript_sample"] if "eigenscript_sample" in b else 200,**kw)
+    return cs,run_eigs(cs,starts,b["rk4"]["h"],b["rk4"]["steps"],b["eigenscript_sample"] if "eigenscript_sample" in b else 200,boxes=envelope_boxes(m,cs),**kw)
 
 def item2(m,limit):
     av=verdicts(instance(m)); cs,out=family(m,limit); vs=av+verdicts(out)
+    blown=[v for v in vs if v[3]]
+    if blown: die(f"item2 loud numerical failure row={blown[0][0]} start={blown[0][1]}")
     n=sum(v[2]=="diverging" for v in vs)
     if limit: print(f"SMOKE item2 systems={len(cs)} diverging={n}"); return
     if len(vs)!=3317 or n: die(f"item2 diverging={n}")
@@ -115,30 +125,41 @@ def clusters(xs):
         else: out[-1].append(x)
     return out
 
-def pipeline(cs,starts,h,steps,sample,cross_from):
-    stats=[]; allx=[]; retained=[]
+def pipeline(cs,starts,h,steps,sample,cross_from,boxes=None):
+    stats=[]; retained=[]; values=[]
     for direction in (1,-1):
-        out=run_eigs(cs,starts,h,steps,sample,direction,cross_from)
+        out=run_eigs(cs,starts,h,steps,sample,direction,cross_from,boxes=boxes)
         es=estimates(out,cs,h,direction); vs=verdicts(out); count=[0,0,0,0]
-        rows=[0]*len(cs)
+        rows=[0]*len(cs); row_values=[[] for _ in cs]
         for r,i,v,e in vs:
             xs=es.get((r,i),[]); x=settled(xs)
             if e: count[2]+=1
             elif not xs: count[3]+=1
             elif v!="oscillating" or x is None: count[1]+=1
-            else: count[0]+=1; rows[r]+=1; allx.append(x)
-        stats.append(count); retained.append(rows)
-    return stats,clusters(allx),retained
+            else: count[0]+=1; rows[r]+=1; row_values[r].append(x)
+        stats.append(count); retained.append(rows); values.append(row_values)
+    # Pool directions within a system, never systems within the population.
+    row_clusters=[clusters(values[0][r]+values[1][r]) for r in range(len(cs))]
+    return stats,row_clusters,retained,values
 
 def item3(m,limit):
     # Positive controls use precisely pipeline(), as does Family B.
     a=m["instance_a"]; sa=[.2+.05*i for i in range(117)]
     # The controls validate the Family-B numerical pipeline, including its
     # integration cadence, rather than Instance A's otherwise-frozen cadence.
-    ast,ac,_=pipeline([a["coefficients"]],sa,.005,80000,200,60000)
-    vst,vc,_=pipeline([[-1,0,1/3,0,0]],sa,.005,80000,200,60000)
-    if len(ac)!=2 or len(vc)!=1: die("positive-control cluster count")
-    reps=[median(x) for x in ac]; vr=median(vc[0])
+    ast,ac,aret,avals=pipeline([a["coefficients"]],sa,.005,80000,200,60000)
+    vst,vc,vret,vvals=pipeline([[-1,0,1/3,0,0]],sa,.005,80000,200,60000)
+    if len(ac[0])!=2 or len(vc[0])!=1: die("positive-control cluster count")
+    if aret != [[len(sa)],[len(sa)]] or vret != [[len(sa)],[len(sa)]]:
+        die("positive-control retention is not 100%")
+    # Instance A's forward runs must supply only the outer candidate and its
+    # reverse runs only the inner candidate; a pooled count alone is weaker.
+    if len(clusters(avals[0][0]))!=1 or len(clusters(avals[1][0]))!=1:
+        die("positive-control direction count")
+    forward_rep=median(avals[0][0]); reverse_rep=median(avals[1][0])
+    if abs(forward_rep-m["oracle"]["outer"])>1e-9 or abs(reverse_rep-m["oracle"]["inner"])>1e-9:
+        die("positive-control direction mismatch")
+    reps=[median(x) for x in ac[0]]; vr=median(vc[0][0])
     controls=(("A-inner",reps[0],m["oracle"]["inner"]),
               ("A-outer",reps[1],m["oracle"]["outer"]),
               ("van-der-Pol",vr,m["oracle"]["van_der_pol"]))
@@ -147,10 +168,12 @@ def item3(m,limit):
     if max(abs(rep-oracle) for _,rep,oracle in controls)>1e-9:
         die("positive-control amplitude exceeds 1e-9")
     cs=coeffs(m); cs=cs[:limit] if limit else cs; b=m["family_b"]
-    st,cl,ret=pipeline(cs,[.25+.25*i for i in range(20)],.005,80000,200,60000)
-    reaches=sum(len(x)>=3 for x in [cl])
+    st,row_clusters,ret,_=pipeline(cs,[.25+.25*i for i in range(20)],.005,80000,200,60000,
+                                  boxes=envelope_boxes(m,cs))
+    reaches=sum(len(x)>=3 for x in row_clusters)
+    max_clusters=max((len(x) for x in row_clusters),default=0)
     if limit:
-        print(f"SMOKE item3 systems={len(cs)} starts={len(cs)*20} directions=2 reaches_3={reaches}"); return
+        print(f"SMOKE item3 systems={len(cs)} starts={len(cs)*20} directions=2 max_clusters={max_clusters} reaches_3={reaches}"); return
     # Coverage and count are checked per frozen row/direction.
     with (ROOT/b["oracle_coverage"]["table"]).open() as f: cov=list(csv.DictReader(f))
     coverage_ok=True
@@ -159,7 +182,7 @@ def item3(m,limit):
             den=int(row[f"{name}_oracle_settled"])
             if den and ret[d][i] < math.ceil(.9*den): coverage_ok=False
     if reaches or not coverage_ok:
-        print(f"FAIL item3 completed=1 reaches_3={reaches} coverage_floor={'PASS' if coverage_ok else 'FAIL'}")
+        print(f"FAIL item3 completed=1 max_clusters={max_clusters} reaches_3={reaches} coverage_floor={'PASS' if coverage_ok else 'FAIL'}")
         raise SystemExit(1)
     f,r=st
     print(f"PASS item3 population=160 starts=3200 directions=2 runs=6400 forward_settled={f[0]} forward_estimator_rejected={f[1]} forward_escaped={f[2]} forward_no_crossings={f[3]} forward_clustered_runs={f[0]} reverse_settled={r[0]} reverse_estimator_rejected={r[1]} reverse_escaped={r[2]} reverse_no_crossings={r[3]} reverse_clustered_runs={r[0]} coverage_floor=0.90 controls=A:2,vdp:1 max_clusters<=2 reaches_3=0")
@@ -191,8 +214,9 @@ def item5(m):
         e["LIENARD55_ALLOW_FAULT_BINARY"]="1"
         q=subprocess.run([sys.executable,__file__,"item3","--manifest",str(ROOT/"prereg/55/manifest.json")],text=True,capture_output=True,env=e)
         sys.stdout.write(q.stdout); sys.stderr.write(q.stderr)
-        mt=re.search(r"reaches_3=(\d+)",q.stdout)
-        if q.returncode!=1 or not mt or int(mt.group(1))<1: die("item5 completed fault run did not reach three clusters")
+        mt=re.search(r"^FAIL item3 completed=1 max_clusters=\d+ reaches_3=(\d+) coverage_floor=(PASS|FAIL)$",q.stdout,re.M)
+        if q.returncode!=1 or not mt or int(mt.group(1))<1 or mt.group(2)!="PASS":
+            die("item5 fault run was incomplete, uncovered, or did not reach three clusters")
     print("PASS item5 normal_window=10 fault_window=4 item3_exit=1 reaches_3>=1")
 
 def baseline(m):

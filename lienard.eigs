@@ -7,9 +7,11 @@ steps is __STEPS__
 sample_steps is __SAMPLE_STEPS__
 direction is __DIRECTION__
 crossing_from is __CROSSING_FROM__
+boxes is __BOXES__
 
 for row in range of (len of coeffs):
     c is coeffs[row]
+    box is boxes[row]
     for si in range of (len of starts):
         x is starts[si]
         y is 0.0
@@ -55,11 +57,17 @@ for row in range of (len of coeffs):
                             hit is 1
                 if hit == 1:
                     print of f"CROSS {row} {si} {px} {py} {x} {y}"
-            if abs of x > 1000000.0:
+            # x != x and y != y are explicit NaN tests.  Do not rely on an
+            # ordered comparison: every comparison with NaN is false.
+            if (x != x) or (y != y):
                 escaped is 1
                 i is steps
-            if abs of y > 1000000.0:
+            if (abs of x > 1000000.0) or (abs of y > 1000000.0):
                 escaped is 1
                 i is steps
+            if direction == -1:
+                if (abs of x > box[0]) or (abs of y > box[1]):
+                    escaped is 1
+                    i is steps
         status is report_value of E
         print of f"VERDICT {row} {si} {status} {escaped} {x} {y}"

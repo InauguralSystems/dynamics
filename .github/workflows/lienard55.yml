@@ -2,7 +2,8 @@ name: Lienard issue 55 long acceptance
 
 on:
   push:
-    branches: [work]
+    # The PR branch only: `work` was the Cloud worker's internal branch name, which never exists here.
+    branches: [cloud-55]
 
 permissions:
   contents: read
@@ -11,6 +12,10 @@ jobs:
   frozen-long-runs:
     runs-on: ubuntu-latest
     timeout-minutes: 340
+    defaults:
+      run:
+        # bash -eo pipefail: without it, `item3 | tee` reports tee's exit status and a failed item shows green.
+        shell: bash
     steps:
       - uses: actions/checkout@v7
       - name: Install harness dependencies

@@ -1,13 +1,13 @@
 # Frozen issue-55 Lienard RK4 workload.  The Python harness replaces the
 # double-underscore tokens with manifest-derived literals in a temporary copy.
-coeffs is __COEFFS__
-starts is __STARTS__
-h is __H__
-steps is __STEPS__
-sample_steps is __SAMPLE_STEPS__
-direction is __DIRECTION__
-crossing_from is __CROSSING_FROM__
-boxes is __BOXES__
+coeffs is __COEFFS__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+starts is __STARTS__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+h is __H__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+steps is __STEPS__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+sample_steps is __SAMPLE_STEPS__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+direction is __DIRECTION__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+crossing_from is __CROSSING_FROM__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
+boxes is __BOXES__  # lint: allow E003 -- tests/lienard_55.py render() binds this token
 
 for row in range of (len of coeffs):
     c is coeffs[row]

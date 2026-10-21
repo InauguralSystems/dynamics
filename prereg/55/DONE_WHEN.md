@@ -11,6 +11,25 @@ says “the observer gates and a Hermite Sigma estimator measures,” replacing
 the issue's “observer-derived amplitude,” because the observer exposes a
 predicate verdict but no amplitude value.
 
+**Third deviation (orchestrator ruling, 2026-10-20, recorded BEFORE any Family-B
+data existed).** Item 3's positive controls (Instance A's two cycles and the van
+der Pol cycle) integrate with **Family B's fixed step `h=0.005`** (`T=400`,
+transient `T=300`, window `T=100`), not Instance A's `h=0.01`. The controls exist
+to validate the pipeline that grades Family B, so they run with Family B's
+integrator settings. The control allowance stays at `1e-9`, and every other control
+requirement (counts, directions, spans `<=0.01`, 100% retention) is unchanged.
+Instance A's `h=0.01` still governs items 1, 2, 4 and 7.
+
+- *Why:* the first builder's item-3 smoke (Cloud task
+  `task_e_6ad80a371f58832dbf0eacf7d42ac4a5`) ran the controls at `h=0.01`.
+  The outer Instance-A control missed by `2.34e-9` and van der Pol by `1.25e-9`;
+  the inner control's error was `4.81e-11`. That is discretization, consistent
+  with this contract's own RK4-convergence criterion of `1e-7`, which is two
+  orders looser than the control allowance. The bar contradicted itself, and
+  no Family-B row had run.
+- *If the controls still miss `1e-9` at `h=0.005`,* item 3 stops and reports the
+  measured errors. No further change is made without a new recorded ruling.
+
 This is a **pre-registration**, not an implementation.  The commands below are
 the frozen CLI contract for the later builder; `tests/lienard_55.py` and
 `lienard.eigs` deliberately do not exist in this change.  A command passes only

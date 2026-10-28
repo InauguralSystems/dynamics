@@ -46,6 +46,11 @@ estimates must still equal the registered oracles within `1e-9`:
 * van der Pol forward: `1.919275835629`.
 
 The control starts that decay to the origin are not denominator members.
+So van der Pol REVERSE has an empty denominator: all 35 of its frozen-rule
+oracle-settled runs decay to the origin, and 0 remain. That direction is an
+empty control and gives no positive evidence; the positive controls cover
+three of the four control directions (Instance A forward and reverse, van der
+Pol forward). The counts are in `evidence/positive_controls.csv`.
 Specifically, Instance A `x0=0.20` forward and Family-B row 0 `x0=0.25`
 forward must both return false.
 

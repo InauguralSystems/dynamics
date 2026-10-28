@@ -245,9 +245,9 @@ _view is {"cx": 0.0, "cy": 0.0, "half": RANGE}
 # Pointer bookkeeping for the canvas gestures. `_drag` holds the view
 # centre at the moment the drag started, so a pan is computed from the
 # press point rather than accumulated per motion event (no drift).
-# `_ptr` is the last pointer position seen over the canvas: the wheel
-# event carries scroll deltas but NO cursor position (F-DYN-11), so
-# cursor-anchored zoom has to remember where the pointer was.
+# `_ptr` is the last pointer position seen over the canvas. Native wheel
+# events carry their own pointer as mx/my (EigenScript#822); this shadow is
+# retained only for synthesized events that omit those fields.
 _drag is {"active": 0, "mx": 0, "my": 0, "cx": 0.0, "cy": 0.0}
 _ptr is {"x": CANVAS_X + (CANVAS_W / 2), "y": CANVAS_Y + (CANVAS_H / 2)}
 
@@ -394,10 +394,16 @@ define _on_canvas_mouse(w, ev) as:  # lint: allow W002 -- lib/ui's on_mouse sign
     return null
 
 define _on_canvas_wheel(w, ev) as:  # lint: allow W002 -- lib/ui's on_wheel signature
+    local zx is _ptr.x
+    local zy is _ptr.y
+    if ev.mx != null:
+        zx is ev.mx
+    if ev.my != null:
+        zy is ev.my
     if ev.y > 0:
-        return zoom_at of [ZOOM_STEP, _ptr.x, _ptr.y]
+        return zoom_at of [ZOOM_STEP, zx, zy]
     if ev.y < 0:
-        return zoom_at of [1.0 / ZOOM_STEP, _ptr.x, _ptr.y]
+        return zoom_at of [1.0 / ZOOM_STEP, zx, zy]
     return null
 
 # ---- the bifurcation view --------------------------------------------

@@ -7,9 +7,10 @@ never looks at what a user sees. So this launches the REAL orbit-lab
 window, drives REAL pointer and key input with xdotool, and verifies by
 reading pixels back:
 
-  1. running  -> two grabs of the plot differ            (the sim is live)
-  2. Pause    -> two grabs are pixel-identical           (advancement froze)
-  3. unpause  -> the plot changes again                  (pause was a freeze,
+  1. first wheel -> its own pointer is the zoom anchor    (no prior motion)
+  2. running  -> two grabs of the plot differ            (the sim is live)
+  3. Pause    -> two grabs are pixel-identical           (advancement froze)
+  4. unpause  -> the plot changes again                  (pause was a freeze,
                                                           not a hang)
   4. drag     -> the plot changes                        (pan is wired)
   5. wheel    -> the plot changes AND the decoded "zoom xN" label moves
@@ -41,9 +42,11 @@ trajectory with the view moving every frame) — this file is about
 whether the controls respond at all.
 
 The checker is validated by planted faults rather than trusted: run with
-`--fault pan` (mousedown never claims the drag), `--fault pause` (the
+`--fault wheelptr` (the wheel ignores its own pointer), `--fault pan`
+(mousedown never claims the drag), `--fault pause` (the
 tick advances even when paused), or `--fault mode` (the view never changes)
-and the corresponding check MUST go red. The wrapper drives all four runs.
+and the corresponding check MUST go red. The wrapper drives the clean run and
+all four plants.
 
 Assumes an X display (the wrapper uses xvfb-run). Needs the gfx build
 (EIGENSCRIPT), xdotool, xwd, PIL.
@@ -65,6 +68,7 @@ INK = lambda r, g, b: min(r, g, b) > 150
 # oracle decodes — side panel at (460, 12), labels at panel-relative
 # (8, 66) and (8, 186).
 CANVAS = (12, 12, 436, 446)
+FIRST_WHEEL = (100, 100)                    # deliberately off-centre
 ZETA_LABEL_XY = (468, 78)
 ZOOM_LABEL_XY = (468, 198)
 SLIDER = (468, 100, 192)                    # x, y (centre), width
@@ -381,6 +385,10 @@ FAULTS = {
     # of bug where "a handler ran" is mistaken for "the UI changed".
     "mode": ('    if w.value == 1:\n        return set_mode of "bif"\n',
              '    if w.value == 1:\n        return null\n'),
+    # Recreate F-DYN-11: ignore the wheel event's pointer and use only
+    # the hover shadow, which is still at its centre default.
+    "wheelptr": ("    if ev.mx != null:\n        zx is ev.mx\n",
+                 "    if ev.mx != null:\n        zx is CANVAS_X + (CANVAS_W / 2)\n"),
 }
 
 
@@ -397,13 +405,18 @@ def build_tree(tmp, fault):
         if needle not in src:
             raise RuntimeError("planted fault %r no longer matches orbit.eigs" % fault)
         open(path, "w").write(src.replace(needle, repl, 1))
-    # Read-only acknowledgement through the existing post-event frame hook.
-    # This lives ONLY in the disposable app copy. Production input handlers,
-    # simulation and rendering remain unchanged; a tick is not a pixel verdict.
+    # Acknowledgement through the existing post-event frame hook. This lives
+    # ONLY in the disposable app copy; it also holds the hover shadow at its
+    # startup value to reproduce wheel-before-motion state. Production input
+    # handlers, simulation and rendering remain unchanged; a tick is not a
+    # pixel verdict.
     with open(os.path.join(tree, "orbit.eigs"), "a") as fh:
         fh.write('\ndefine mouse_qa_ack(sim) as:\n'
+                 '    if _view.half == RANGE:\n'
+                 '        _ptr.x is CANVAS_X + (CANVAS_W / 2)\n'
+                 '        _ptr.y is CANVAS_Y + (CANVAS_H / 2)\n'
                  '    write_text of ["mouse-qa-state", '
-                 'f"{_app.ticks}|{sim.frame}|{_app.paused}|{_app.mode}|END\\n"]\n'
+                 'f"{_app.ticks}|{sim.frame}|{_app.paused}|{_app.mode}|{_view.cx}|{_view.cy}|{_view.half}|END\\n"]\n'
                  '    return null\n')
     with open(os.path.join(tree, "orbit_qa.eigs"), "w") as fh:
         fh.write("import orbit\norbit.set_frame_hook of orbit.mouse_qa_ack\n"
@@ -448,19 +461,21 @@ def main():
         tree = build_tree(tmp, fault)
         proc = start_app(["orbit_qa.eigs"], tree, tmp, "orbit")
         wid = wait_for_window(proc, TITLE)
-        print("window %s at %r" % (wid, window_origin(wid)))
+        origin = window_origin(wid)
+        print("window %s at %r" % (wid, origin))
 
         def state():
             ensure_live(proc)
             try:
                 with open(os.path.join(tree, "mouse-qa-state")) as fh:
                     fields = fh.read().strip().split("|")
-                if len(fields) != 5 or fields[4] != "END":
+                if len(fields) != 8 or fields[7] != "END":
                     return None       # write_text may be between truncate/write
                 ticks, frame, paused = map(int, fields[:3])
                 if ticks < 1 or frame < 0 or paused not in (0, 1) or fields[3] not in ("orbit", "bif"):
                     return None
-                return dict(ticks=ticks, frame=frame, paused=paused, mode=fields[3])
+                return dict(ticks=ticks, frame=frame, paused=paused, mode=fields[3],
+                            cx=float(fields[4]), cy=float(fields[5]), half=float(fields[6]))
             except (FileNotFoundError, ValueError):
                 return None
 
@@ -521,6 +536,14 @@ def main():
 
         ready = wait_state("startup", lambda s: s["mode"] == "orbit" and s["paused"] == 0)
 
+        # Warp native input to the off-centre point, while the QA-only frame
+        # hook keeps the hover shadow at its untouched startup value. This
+        # reproduces the observable state of a wheel before any canvas motion
+        # without synthesizing the wheel itself (X11 necessarily emits motion
+        # for a pointer warp).
+        xdo("mousemove", "--window", wid, FIRST_WHEEL[0], FIRST_WHEEL[1])
+        ready = ticks_after("first-wheel-armed", ready)
+
         # Window-relative pointer moves: `getwindowgeometry` reports the
         # FRAME position under a window manager, so adding it to a client
         # coordinate misses every thin control by the title-bar height.
@@ -560,7 +583,25 @@ def main():
 
         cx, cy = CANVAS[0] + CANVAS[2] // 2, CANVAS[1] + CANVAS[3] // 2
 
-        # 1. running: consecutive frames of the plot differ. Checked first,
+        # 1. Wheel before any motion. The world coordinate under the native
+        # wheel event's pointer must remain under that pointer after zooming.
+        # A shadow-only handler instead anchors at its untouched centre default.
+        first_before = state()
+        ax, ay = FIRST_WHEEL
+        wx = first_before["cx"] - first_before["half"] + (ax - CANVAS[0]) * (2.0 * first_before["half"] / CANVAS[2])
+        wy = first_before["cy"] + first_before["half"] - (ay - CANVAS[1]) * (2.0 * first_before["half"] / CANVAS[3])
+        xdo("click", "4")
+        print("INPUT first wheel at (%d,%d) monotonic=%.6f" % (ax, ay, time.monotonic()))
+        first_after = wait_state("first-wheel", lambda s: s["ticks"] > first_before["ticks"] and s["half"] < first_before["half"])
+        px_after = CANVAS[0] + (wx - first_after["cx"] + first_after["half"]) * CANVAS[2] / (2.0 * first_after["half"])
+        py_after = CANVAS[1] + (first_after["cy"] + first_after["half"] - wy) * CANVAS[3] / (2.0 * first_after["half"])
+        anchor_error = max(abs(px_after - ax), abs(py_after - ay))
+        check(anchor_error <= 1.0,
+              "first wheel: event pointer anchors zoom before any mouse motion (%.3f px error)" % anchor_error)
+        key("r")
+        ready = wait_state("first-wheel-reset", lambda s: s["ticks"] > first_after["ticks"] and s["half"] == first_before["half"])
+
+        # 2. running: consecutive frames of the plot differ. Checked first,
         # while the orbit is still wide — it decays toward the fixed point
         # from the moment the window opens.
         run_a = snapshot("running-before")

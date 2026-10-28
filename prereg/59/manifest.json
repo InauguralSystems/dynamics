@@ -1,0 +1,36 @@
+{
+  "schema": 1,
+  "issue": 59,
+  "successor_to": 55,
+  "item3_has_not_run": true,
+  "inherits": "prereg/55/manifest.json",
+  "oracle_settled": {
+    "frozen_function": "prereg/55/oracle_settled.py::one",
+    "wrapper": "prereg/59/oracle_settled.py::one",
+    "origin_test": "minimum positive-x Sigma crossing in [200,300] >= 1e-6",
+    "origin_crossing_floor": 1e-6,
+    "family_b_table": "prereg/59/evidence/oracle_settled.csv",
+    "family_b_table_sha256": "abfb842d1c17bb400ce6f0caca1a1ec72cc44662c77f4f522f09d3b914a65c93",
+    "forward_total": 1515,
+    "reverse_total": 36,
+    "retention_floor": 0.9
+  },
+  "positive_controls": {
+    "table": "prereg/59/evidence/positive_controls.csv",
+    "table_sha256": "3f8d2ece2fbc61bd876814e601a145258df299dfac878950f76a6d371c883d4d",
+    "required_retention": 1.0,
+    "corrected_denominators": {
+      "instance_a": {"forward": 91, "reverse": 75},
+      "van_der_pol": {"forward": 117, "reverse": 0}
+    },
+    "cycle_estimate_oracles": [3.922873870354, 1.487060441512, 1.919275835629]
+  },
+  "attribution_control": {
+    "origin_test_disabled_table": "prereg/59/evidence/oracle_settled_frozen_control.csv",
+    "sha256": "4f0ecb1b4b0a0c9f25a9226e5e313006fbfdb7ed27b99e8b4095ecf0522e7bc7",
+    "frozen_positive_control_denominators": {
+      "instance_a": {"forward": 117, "reverse": 75},
+      "van_der_pol": {"forward": 117, "reverse": 35}
+    }
+  }
+}

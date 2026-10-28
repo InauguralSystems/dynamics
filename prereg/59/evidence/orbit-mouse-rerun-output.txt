@@ -1,0 +1,319 @@
+--- gfx capability probe ---
+--- mouse + render-decode oracle (real window, real input) ---
+OWNED window=4194312 pid=10624 session/group=10624
+atlas: 95 glyphs
+OWNED window=2097160 pid=10637 session/group=10637
+XDO send ('getwindowgeometry', '2097160') monotonic=8915.865191
+window 2097160 at (300, 277)
+ACK startup monotonic=8915.870052 elapsed=0.000 state={'ticks': 1, 'frame': 1, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 100, 100) monotonic=8915.870070
+ACK first-wheel-armed monotonic=8915.930734 elapsed=0.057 state={'ticks': 4, 'frame': 4, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('click', '4') monotonic=8915.930914
+INPUT first wheel at (100,100) monotonic=8916.038885
+ACK first-wheel monotonic=8916.039026 elapsed=0.000 state={'ticks': 11, 'frame': 11, 'paused': 0, 'mode': 'orbit', 'cx': -0.17889908256880732, 'cy': 0.18161434977578472, 'half': 1.2}
+PASS first wheel: event pointer anchors zoom before any mouse motion (0.000 px error)
+XDO send ('key', '--window', '2097160', 'r') monotonic=8916.039078
+INPUT key r monotonic=8916.054958
+ACK first-wheel-reset monotonic=8916.055058 elapsed=0.000 state={'ticks': 12, 'frame': 12, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE running-before monotonic=8916.285945 state={'ticks': 26, 'frame': 26, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE running monotonic=8916.712768 elapsed=0.427 state={'ticks': 26, 'frame': 26, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS running: the plot advances between frames (1304 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8916.783627
+XDO send ('click', '1') monotonic=8916.790713
+INPUT click (230,235) monotonic=8916.893871
+ACK canvas-focus-rendered monotonic=8916.894003 elapsed=0.000 state={'ticks': 54, 'frame': 54, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE startup-labels monotonic=8917.089079 state={'ticks': 66, 'frame': 66, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded labels at startup: 'zeta = 0' / 'zoom x1'
+PASS render-decode: zeta label reads 'zeta = 0'
+PASS render-decode: zoom label reads 'zoom x1'
+ACK before-space monotonic=8917.092656 elapsed=0.000 state={'ticks': 66, 'frame': 66, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8917.092694
+INPUT key space monotonic=8917.109310
+ACK space-1 monotonic=8917.159717 elapsed=0.050 state={'ticks': 70, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8917.210073 elapsed=0.050 state={'ticks': 73, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-before monotonic=8917.402850 state={'ticks': 85, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK pause-observation monotonic=8917.807089 elapsed=0.404 state={'ticks': 110, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-after monotonic=8918.018078 state={'ticks': 124, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS pause: advancement freezes — live ticks over >=0.4s are identical (0 px differ)
+ACK before-space monotonic=8918.076441 elapsed=0.000 state={'ticks': 127, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8918.076463
+INPUT key space monotonic=8918.093751
+ACK space-0 monotonic=8918.093871 elapsed=0.000 state={'ticks': 128, 'frame': 68, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8918.144202 elapsed=0.050 state={'ticks': 132, 'frame': 72, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE unpause-before monotonic=8918.345769 state={'ticks': 144, 'frame': 84, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE unpause monotonic=8918.598171 elapsed=0.252 state={'ticks': 144, 'frame': 84, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS unpause: advancement resumes (545 px differ)
+ACK before-space monotonic=8918.653325 elapsed=0.001 state={'ticks': 163, 'frame': 103, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8918.653354
+INPUT key space monotonic=8918.669995
+ACK space-1 monotonic=8918.670103 elapsed=0.000 state={'ticks': 164, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8918.720688 elapsed=0.051 state={'ticks': 167, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pre-pan monotonic=8918.929492 state={'ticks': 180, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8918.930142
+XDO send ('mousedown', '1') monotonic=8918.941771
+XDO send ('mousemove', '--window', '2097160', 200, 223) monotonic=8919.071308
+XDO send ('mousemove', '--window', '2097160', 170, 211) monotonic=8919.203890
+XDO send ('mousemove', '--window', '2097160', 140, 199) monotonic=8919.349469
+XDO send ('mouseup', '1') monotonic=8919.485111
+INPUT drag monotonic=8919.493322
+VISIBLE pan monotonic=8919.826198 elapsed=0.333 state={'ticks': 211, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.6192660550458716, 'cy': -0.242152466367713, 'half': 1.5}
+PASS drag: panning redraws the plot while paused (22349 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8919.888418
+XDO send ('click', '4') monotonic=8919.896280
+XDO send ('click', '4') monotonic=8920.005333
+INPUT wheel monotonic=8920.110343
+VISIBLE zoom monotonic=8920.404335 elapsed=0.294 state={'ticks': 248, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.6192660550458718, 'cy': -0.24215246636771293, 'half': 0.96}
+PASS wheel: zooming redraws the plot (22626 px differ)
+decoded zoom label after 2 wheel steps: 'zoom x1.56'
+PASS render-decode: zoom label moved off 'zoom x1' to 'zoom x1.56'
+XDO send ('key', '--window', '2097160', 'r') monotonic=8920.468519
+INPUT key r monotonic=8920.485933
+VISIBLE reset monotonic=8920.759167 elapsed=0.273 state={'ticks': 271, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS reset: `r` restores the pre-pan plot pixel-for-pixel (0 px differ)
+PASS render-decode: zoom label back to 'zoom x1' after reset
+XDO send ('mousemove', '--window', '2097160', 476, 100) monotonic=8920.842204
+XDO send ('mousedown', '1') monotonic=8920.846030
+XDO send ('mousemove', '--window', '2097160', 564, 100) monotonic=8920.971975
+XDO send ('mousemove', '--window', '2097160', 640, 100) monotonic=8921.095923
+XDO send ('mouseup', '1') monotonic=8921.219247
+INPUT drag monotonic=8921.222980
+VISIBLE slider monotonic=8921.433306 elapsed=0.210 state={'ticks': 314, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded zeta label after slider drag: 'zeta = 1.79'
+PASS slider: dragging moves zeta 'zeta = 0' -> 'zeta = 1.79'
+CAPTURE pre-mode monotonic=8921.643508 state={'ticks': 340, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 564, 437) monotonic=8921.643779
+XDO send ('click', '1') monotonic=8921.648103
+INPUT click (564,437) monotonic=8921.755179
+VISIBLE mode-bif monotonic=8922.019444 elapsed=0.264 state={'ticks': 344, 'frame': 103, 'paused': 1, 'mode': 'bif', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded bifurcation column: 'logistic map'
+PASS mode: the control column reads 'logistic map' after the view toggle
+PASS mode: the plot area is redrawn as the bifurcation chart (25470 px differ)
+ACK bif-observation monotonic=8922.517781 elapsed=0.403 state={'ticks': 370, 'frame': 103, 'paused': 1, 'mode': 'bif', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE bif-static monotonic=8922.728873 state={'ticks': 377, 'frame': 103, 'paused': 1, 'mode': 'bif', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS mode: the bifurcation diagram is static between frames (0 px differ)
+XDO send ('mousemove', '--window', '2097160', 564, 437) monotonic=8922.792403
+XDO send ('click', '1') monotonic=8922.803756
+INPUT click (564,437) monotonic=8922.908357
+VISIBLE mode-orbit monotonic=8923.200166 elapsed=0.292 state={'ticks': 385, 'frame': 103, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded zeta label after toggling back: 'zeta = 1.79'
+PASS mode: toggling back restores the phase-portrait column ('zeta = 1.79')
+PASS mode: the phase portrait comes back pixel-for-pixel (0 px differ)
+
+all mouse + render-decode checks passed
+--- planted fault: wheelptr ---
+=== planted fault: wheelptr (the matching check MUST go red) ===
+OWNED window=2097160 pid=10800 session/group=10800
+atlas: 95 glyphs
+OWNED window=2097160 pid=10816 session/group=10816
+XDO send ('getwindowgeometry', '2097160') monotonic=8924.133230
+window 2097160 at (300, 277)
+ACK startup monotonic=8924.136428 elapsed=0.000 state={'ticks': 1, 'frame': 1, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 100, 100) monotonic=8924.136452
+ACK first-wheel-armed monotonic=8924.245168 elapsed=0.106 state={'ticks': 6, 'frame': 6, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('click', '4') monotonic=8924.245252
+INPUT first wheel at (100,100) monotonic=8924.353461
+ACK first-wheel monotonic=8924.353702 elapsed=0.000 state={'ticks': 13, 'frame': 13, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.18161434977578472, 'half': 1.2}
+FAIL first wheel: event pointer anchors zoom before any mouse motion (32.500 px error)
+(stopping at the first failure)
+
+1 mouse-oracle failure(s)
+PASS: planted fault 'wheelptr' is caught by the oracle
+--- planted fault: pause ---
+=== planted fault: pause (the matching check MUST go red) ===
+OWNED window=4194312 pid=10937 session/group=10937
+atlas: 95 glyphs
+OWNED window=2097160 pid=10951 session/group=10951
+XDO send ('getwindowgeometry', '2097160') monotonic=8925.301428
+window 2097160 at (300, 277)
+ACK startup monotonic=8925.354659 elapsed=0.050 state={'ticks': 3, 'frame': 3, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 100, 100) monotonic=8925.354711
+ACK first-wheel-armed monotonic=8925.408210 elapsed=0.050 state={'ticks': 6, 'frame': 6, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('click', '4') monotonic=8925.408285
+INPUT first wheel at (100,100) monotonic=8925.512655
+ACK first-wheel monotonic=8925.512862 elapsed=0.000 state={'ticks': 13, 'frame': 13, 'paused': 0, 'mode': 'orbit', 'cx': -0.17889908256880732, 'cy': 0.18161434977578472, 'half': 1.2}
+PASS first wheel: event pointer anchors zoom before any mouse motion (0.000 px error)
+XDO send ('key', '--window', '2097160', 'r') monotonic=8925.512900
+INPUT key r monotonic=8925.528948
+ACK first-wheel-reset monotonic=8925.529061 elapsed=0.000 state={'ticks': 14, 'frame': 14, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE running-before monotonic=8925.737097 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE running monotonic=8925.989483 elapsed=0.252 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS running: the plot advances between frames (1182 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8926.044634
+XDO send ('click', '1') monotonic=8926.047873
+INPUT click (230,235) monotonic=8926.151178
+ACK canvas-focus-rendered monotonic=8926.151305 elapsed=0.000 state={'ticks': 52, 'frame': 52, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE startup-labels monotonic=8926.363160 state={'ticks': 66, 'frame': 66, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded labels at startup: 'zeta = 0' / 'zoom x1'
+PASS render-decode: zeta label reads 'zeta = 0'
+PASS render-decode: zoom label reads 'zoom x1'
+ACK before-space monotonic=8926.367992 elapsed=0.000 state={'ticks': 66, 'frame': 66, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8926.368044
+INPUT key space monotonic=8926.386794
+ACK space-1 monotonic=8926.386903 elapsed=0.000 state={'ticks': 67, 'frame': 67, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8926.437225 elapsed=0.050 state={'ticks': 71, 'frame': 71, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-before monotonic=8926.638223 state={'ticks': 83, 'frame': 83, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK pause-observation monotonic=8927.048286 elapsed=0.410 state={'ticks': 106, 'frame': 106, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-after monotonic=8927.274499 state={'ticks': 120, 'frame': 120, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+FAIL pause: advancement freezes — live ticks over >=0.4s are identical (1469 px differ)
+(stopping at the first failure)
+
+1 mouse-oracle failure(s)
+PASS: planted fault 'pause' is caught by the oracle
+--- planted fault: pan ---
+=== planted fault: pan (the matching check MUST go red) ===
+OWNED window=2097160 pid=11080 session/group=11080
+atlas: 95 glyphs
+OWNED window=2097160 pid=11095 session/group=11095
+XDO send ('getwindowgeometry', '2097160') monotonic=8928.193736
+window 2097160 at (300, 277)
+ACK startup monotonic=8928.198440 elapsed=0.000 state={'ticks': 1, 'frame': 1, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 100, 100) monotonic=8928.198468
+ACK first-wheel-armed monotonic=8928.302854 elapsed=0.101 state={'ticks': 6, 'frame': 6, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('click', '4') monotonic=8928.302937
+INPUT first wheel at (100,100) monotonic=8928.409724
+ACK first-wheel monotonic=8928.409861 elapsed=0.000 state={'ticks': 13, 'frame': 13, 'paused': 0, 'mode': 'orbit', 'cx': -0.17889908256880732, 'cy': 0.18161434977578472, 'half': 1.2}
+PASS first wheel: event pointer anchors zoom before any mouse motion (0.000 px error)
+XDO send ('key', '--window', '2097160', 'r') monotonic=8928.409896
+INPUT key r monotonic=8928.426099
+ACK first-wheel-reset monotonic=8928.426309 elapsed=0.000 state={'ticks': 14, 'frame': 14, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE running-before monotonic=8928.631939 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE running monotonic=8928.897510 elapsed=0.265 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS running: the plot advances between frames (1182 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8928.954374
+XDO send ('click', '1') monotonic=8928.957792
+INPUT click (230,235) monotonic=8929.061723
+ACK canvas-focus-rendered monotonic=8929.061854 elapsed=0.000 state={'ticks': 54, 'frame': 54, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE startup-labels monotonic=8929.277254 state={'ticks': 67, 'frame': 67, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded labels at startup: 'zeta = 0' / 'zoom x1'
+PASS render-decode: zeta label reads 'zeta = 0'
+PASS render-decode: zoom label reads 'zoom x1'
+ACK before-space monotonic=8929.280400 elapsed=0.000 state={'ticks': 68, 'frame': 68, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8929.280423
+INPUT key space monotonic=8929.298796
+ACK space-1 monotonic=8929.298916 elapsed=0.000 state={'ticks': 69, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8929.349195 elapsed=0.050 state={'ticks': 72, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-before monotonic=8929.562599 state={'ticks': 85, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK pause-observation monotonic=8929.966054 elapsed=0.403 state={'ticks': 110, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-after monotonic=8930.180773 state={'ticks': 124, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS pause: advancement freezes — live ticks over >=0.4s are identical (0 px differ)
+ACK before-space monotonic=8930.240259 elapsed=0.000 state={'ticks': 128, 'frame': 68, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8930.240290
+INPUT key space monotonic=8930.261477
+ACK space-0 monotonic=8930.261589 elapsed=0.000 state={'ticks': 129, 'frame': 69, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8930.311898 elapsed=0.050 state={'ticks': 132, 'frame': 72, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE unpause-before monotonic=8930.520870 state={'ticks': 145, 'frame': 85, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE unpause monotonic=8930.792372 elapsed=0.271 state={'ticks': 145, 'frame': 85, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS unpause: advancement resumes (587 px differ)
+ACK before-space monotonic=8930.850710 elapsed=0.000 state={'ticks': 166, 'frame': 106, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8930.850748
+INPUT key space monotonic=8930.872307
+ACK space-1 monotonic=8930.872418 elapsed=0.000 state={'ticks': 167, 'frame': 106, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8930.922726 elapsed=0.050 state={'ticks': 170, 'frame': 106, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pre-pan monotonic=8931.142740 state={'ticks': 184, 'frame': 106, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8931.142990
+XDO send ('mousedown', '1') monotonic=8931.148128
+XDO send ('mousemove', '--window', '2097160', 200, 223) monotonic=8931.271315
+XDO send ('mousemove', '--window', '2097160', 170, 211) monotonic=8931.397008
+XDO send ('mousemove', '--window', '2097160', 140, 199) monotonic=8931.524056
+XDO send ('mouseup', '1') monotonic=8931.652219
+INPUT drag monotonic=8931.656974
+DEADLINE pan monotonic=8939.842515 state={'ticks': 696, 'frame': 106, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+FAIL drag: panning redraws the plot while paused (0 px differ)
+(stopping at the first failure)
+
+1 mouse-oracle failure(s)
+PASS: planted fault 'pan' is caught by the oracle
+--- planted fault: mode ---
+=== planted fault: mode (the matching check MUST go red) ===
+OWNED window=4194312 pid=11263 session/group=11263
+atlas: 95 glyphs
+OWNED window=2097160 pid=11276 session/group=11276
+XDO send ('getwindowgeometry', '2097160') monotonic=8940.770164
+window 2097160 at (300, 277)
+ACK startup monotonic=8940.824367 elapsed=0.050 state={'ticks': 3, 'frame': 3, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 100, 100) monotonic=8940.824402
+ACK first-wheel-armed monotonic=8940.878537 elapsed=0.050 state={'ticks': 6, 'frame': 6, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('click', '4') monotonic=8940.878617
+INPUT first wheel at (100,100) monotonic=8940.984724
+ACK first-wheel monotonic=8940.984896 elapsed=0.000 state={'ticks': 13, 'frame': 13, 'paused': 0, 'mode': 'orbit', 'cx': -0.17889908256880732, 'cy': 0.18161434977578472, 'half': 1.2}
+PASS first wheel: event pointer anchors zoom before any mouse motion (0.000 px error)
+XDO send ('key', '--window', '2097160', 'r') monotonic=8940.984942
+INPUT key r monotonic=8941.006106
+ACK first-wheel-reset monotonic=8941.006344 elapsed=0.000 state={'ticks': 14, 'frame': 14, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE running-before monotonic=8941.217199 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE running monotonic=8941.474855 elapsed=0.257 state={'ticks': 27, 'frame': 27, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS running: the plot advances between frames (1282 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8941.534284
+XDO send ('click', '1') monotonic=8941.538490
+INPUT click (230,235) monotonic=8941.645817
+ACK canvas-focus-rendered monotonic=8941.645969 elapsed=0.000 state={'ticks': 54, 'frame': 54, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE startup-labels monotonic=8941.893151 state={'ticks': 69, 'frame': 69, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded labels at startup: 'zeta = 0' / 'zoom x1'
+PASS render-decode: zeta label reads 'zeta = 0'
+PASS render-decode: zoom label reads 'zoom x1'
+ACK before-space monotonic=8941.898044 elapsed=0.000 state={'ticks': 70, 'frame': 70, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8941.898067
+INPUT key space monotonic=8941.916884
+ACK space-1 monotonic=8941.916986 elapsed=0.000 state={'ticks': 71, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8941.967235 elapsed=0.050 state={'ticks': 74, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-before monotonic=8942.169771 state={'ticks': 87, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK pause-observation monotonic=8942.575578 elapsed=0.406 state={'ticks': 112, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pause-after monotonic=8942.778575 state={'ticks': 125, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS pause: advancement freezes — live ticks over >=0.4s are identical (0 px differ)
+ACK before-space monotonic=8942.835862 elapsed=0.000 state={'ticks': 129, 'frame': 70, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8942.835886
+INPUT key space monotonic=8942.854566
+ACK space-0 monotonic=8942.854733 elapsed=0.000 state={'ticks': 130, 'frame': 71, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8942.955332 elapsed=0.101 state={'ticks': 136, 'frame': 77, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE unpause-before monotonic=8943.158292 state={'ticks': 149, 'frame': 90, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+VISIBLE unpause monotonic=8943.424570 elapsed=0.266 state={'ticks': 149, 'frame': 90, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS unpause: advancement resumes (572 px differ)
+ACK before-space monotonic=8943.480236 elapsed=0.000 state={'ticks': 169, 'frame': 110, 'paused': 0, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('key', '--window', '2097160', 'space') monotonic=8943.480262
+INPUT key space monotonic=8943.499960
+ACK space-1 monotonic=8943.500200 elapsed=0.000 state={'ticks': 170, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+ACK space-rendered monotonic=8943.550509 elapsed=0.050 state={'ticks': 173, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+CAPTURE pre-pan monotonic=8943.778104 state={'ticks': 187, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8943.778310
+XDO send ('mousedown', '1') monotonic=8943.782305
+XDO send ('mousemove', '--window', '2097160', 200, 223) monotonic=8943.905919
+XDO send ('mousemove', '--window', '2097160', 170, 211) monotonic=8944.037478
+XDO send ('mousemove', '--window', '2097160', 140, 199) monotonic=8944.163098
+XDO send ('mouseup', '1') monotonic=8944.300316
+INPUT drag monotonic=8944.308507
+VISIBLE pan monotonic=8944.619411 elapsed=0.311 state={'ticks': 220, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.6192660550458716, 'cy': -0.242152466367713, 'half': 1.5}
+PASS drag: panning redraws the plot while paused (22696 px differ)
+XDO send ('mousemove', '--window', '2097160', 230, 235) monotonic=8944.681810
+XDO send ('click', '4') monotonic=8944.685895
+XDO send ('click', '4') monotonic=8944.789561
+INPUT wheel monotonic=8944.896364
+VISIBLE zoom monotonic=8945.138508 elapsed=0.242 state={'ticks': 257, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.6192660550458718, 'cy': -0.24215246636771293, 'half': 0.96}
+PASS wheel: zooming redraws the plot (23039 px differ)
+decoded zoom label after 2 wheel steps: 'zoom x1.56'
+PASS render-decode: zoom label moved off 'zoom x1' to 'zoom x1.56'
+XDO send ('key', '--window', '2097160', 'r') monotonic=8945.200480
+INPUT key r monotonic=8945.218361
+VISIBLE reset monotonic=8945.773500 elapsed=0.555 state={'ticks': 297, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+PASS reset: `r` restores the pre-pan plot pixel-for-pixel (0 px differ)
+PASS render-decode: zoom label back to 'zoom x1' after reset
+XDO send ('mousemove', '--window', '2097160', 476, 100) monotonic=8945.830625
+XDO send ('mousedown', '1') monotonic=8945.837727
+XDO send ('mousemove', '--window', '2097160', 564, 100) monotonic=8945.960932
+XDO send ('mousemove', '--window', '2097160', 640, 100) monotonic=8946.086455
+XDO send ('mouseup', '1') monotonic=8946.212516
+INPUT drag monotonic=8946.218330
+VISIBLE slider monotonic=8946.432137 elapsed=0.214 state={'ticks': 340, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded zeta label after slider drag: 'zeta = 1.79'
+PASS slider: dragging moves zeta 'zeta = 0' -> 'zeta = 1.79'
+CAPTURE pre-mode monotonic=8946.627480 state={'ticks': 366, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+XDO send ('mousemove', '--window', '2097160', 564, 437) monotonic=8946.627697
+XDO send ('click', '1') monotonic=8946.633731
+INPUT click (564,437) monotonic=8946.740314
+DEADLINE mode-bif monotonic=8954.774840 state={'ticks': 854, 'frame': 110, 'paused': 1, 'mode': 'orbit', 'cx': 0.0, 'cy': 0.0, 'half': 1.5}
+decoded bifurcation column: '���� � � ��'
+FAIL mode: the control column reads '���� � � ��' after the view toggle
+(stopping at the first failure)
+
+1 mouse-oracle failure(s)
+PASS: planted fault 'mode' is caught by the oracle
+PASS: mouse + render-decode oracle (17 checks), and all four planted faults caught

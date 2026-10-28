@@ -1,0 +1,7 @@
+Family-B row 0, x0=0.25, forward:
+positive-x crossings in [200,300] = 16
+maximum x* = 4.852307797518734e-16
+minimum x* = 6.171286547402722e-23
+smallest registered positive-control cycle x* = 1.487060441512
+log10(cycle/origin maximum) = 15.486380278995794 orders of magnitude
+frozen successor floor = 1e-6

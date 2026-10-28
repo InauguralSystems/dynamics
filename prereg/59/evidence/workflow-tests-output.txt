@@ -1,0 +1,144 @@
+--- --lint over 18 .eigs files ---
+PASS: all 18 .eigs files lint clean
+--- planted fault: an unused variable ---
+PASS: planted fault (unused variable) is caught
+0.1.0
+1.4551915228366852e-09
+86
+1.4551915228366852e-09
+PASS: import dynamics → observer convergence helpers run
+PASS: leading-underscore names stay private
+--- physics.eigs (damped-oscillator zeta-sweep) ---
+=== damped-oscillator zeta-sweep: observer regime spectrum ===
+observe ENERGY (Lyapunov) vs DISPLACEMENT (oscillation); flags = regime visited
+
+  zeta     | E:osc conv div grew | x:osc conv div | reading
+  -0.05	| E:Y - - Y     | x:Y - -      | DIVERGES (energy grew)
+  0	| E:Y - - -     | x:Y - -      | x OSCILLATES, energy settles
+  0.1	| E:- - - -     | x:Y - -      | x OSCILLATES, energy settles
+  0.4	| E:- Y - -     | x:Y Y -      | x OSCILLATES, energy settles
+  1	| E:- Y - -     | x:- Y -      | settles
+  2	| E:- Y - -     | x:- - -      | settles
+
+the gem is the zeta=0 row: energy conserved -> never converges, while x
+oscillates. Same system, opposite verdict, set by what the observer watches.
+
+--- temporal: avg velocity over first frame via (prev of x) ---
+  zeta=0.1 frame-velocity = -0.38236023619011794
+
+DONE
+PASS: physics zeta-sweep produces the expected regime spectrum
+--- life.eigs (Conway: temporal vs scalar) ---
+=== Conway's Life: scalar predicate vs temporal truth ===
+population is constant for both a blinker and a block, so report-of-population
+cannot tell them apart. Signature history (temporal) reveals the period.
+
+  seed      population-regime   prev-still?   period   reading
+  blinker	converged		N	      2	period-2 oscillator
+  block	converged		Y	      1	still life
+  glider	converged		N	      0	translating / chaotic
+  single	converged		Y	      1	extinct
+
+blinker and block both read population 'converged' yet are period-2 and
+period-1 — only the temporal signature, not the scalar predicate, separates them.
+
+DONE
+PASS: life distinguishes oscillator/still/translating the scalar predicate cannot
+--- solve.eigs (iterative solvers: predicate as loop condition) ---
+=== iterative solvers: the predicate as a loop condition ===
+every loop runs until `report of change` is settled and HOLDs — the observer,
+not a magnitude tolerance, decides when to stop. (iters include the hold)
+
+Jacobi        Ax=b -> [0.9999999999995453, 0.9999999999990905, 0.9999999999995453]
+              27 iters
+Gauss-Seidel  Ax=b -> [1, 1, 1]
+              21 iters  (fresh values -> fewer than Jacobi)
+
+Power iteration dominant eigenvalue -> 2  (14 iters, expect ~2)
+
+PageRank stationary distribution -> [0.39999999602635705, 0.20000000794728598, 0.39999999602635705]  (48 iters)
+
+DONE
+PASS: Jacobi prints all three converged components
+PASS: Gauss-Seidel prints all three converged components
+PASS: PageRank prints all three converged components
+PASS: solvers converge via the predicate-driven loop (settled + hold)
+--- interactive history is bounded, dump history is complete ---
+FULL_LEN 5001
+TRIMMED_LEN 794
+BOUND 1202
+TRAIL 600
+FRAMES 5000
+TAIL_MATCH 1
+FRAME_EQ true
+STATE_EQ true
+PASS: dump path keeps the whole trajectory; interactive path stays bounded and display-identical
+PASS: planted fault (cap removed, 5001 points retained) is caught by the checker
+--- sweep parameters match the shipped window ---
+  BIF_R_LO = 2.8
+  BIF_R_HI = 4.0
+  BIF_COLS = 200
+  BIF_SAMPLES = 20
+  BIF_TRANSIENT = 600
+--- the plotted sweep against closed-form algebra ---
+SWEEP_N 4000
+P1_COLS 25
+P1_MAXERR 7.771561172376096e-16
+P2_COLS 58
+P2_MAXERR 7.216449660063518e-16
+P2_BOTH_BRANCHES 1
+R1_MEAS 2.999709224700928
+R1_ERR 0.0002907752990721768
+R2_MEAS 3.449387693405151
+R2_ERR 0.00010204937802704706
+R3_MEAS 3.544053444862366
+R3_ERR 3.691468955668853e-05
+RATIO 4.750170592661048
+P3_R 3.8284271247461903
+P3_BELOW 64
+P3_ABOVE 3
+CENSUS_2_8 1
+CENSUS_3_2 2
+CENSUS_3_5 4
+CENSUS_3_55 8
+CENSUS_3_9 64
+PASS: plotted branches match 1-1/r and the analytic 2-cycle to 7.771561172376096e-16 / 7.216449660063518e-16
+PASS: doublings land on r=3, r=1+sqrt(6), r=3.5440903; first Feigenbaum ratio 4.750170592661048 (true 4.7514)
+PASS: period-3 window opens exactly at r=1+sqrt(8)
+--- planted fault 1: the map itself is perturbed (r off by 0.1%) ---
+PASS: perturbed map is caught — branches off by 0.002265281432342059, doublings off by 0.003287601470946644 / 0.0035479607854966844 / 0.0035774305892153357, and the period-3 straddle collapses (below=3)
+--- planted fault 2: an analytic reference constant is moved ---
+PASS: moved reference constant (R2 := 3.5) is caught — R2_ERR 0.050612306594849166
+PASS: bifurcation oracle green, both planted faults caught
+--- gfx capability probe ---
+--- headless reference trajectory (zeta=0.15, frames=200) ---
+--- UI-stepped trajectory (real window, real per-frame draw) ---
+PASS: headless and UI-stepped trajectories are byte-identical (201 lines)
+PASS: planted fault (zeta=0.16) is caught by the checker
+--- UI-stepped trajectory with the view panned/zoomed every frame ---
+PASS: pan/zoom on every frame leaves the trajectory byte-identical (201 lines)
+--- interactive-session history bound (real window) ---
+WIRED_CAP 601
+LEN 41
+CAP 40
+FRAME 120
+HIST_CAP 601
+PASS: interactive session caps history at HIST_CAP=601; live size 41 points after 120 frames
+--- gfx capability probe ---
+SKIP: python3 PIL is not installed — mouse oracle not run
+--- gfx capability probe ---
+--- bifurcation view under a 1500000 KB address-space cap ---
+  static 30 frames: peak 103352 KB  rc=0  built=1 series=1 points=4000 markers=4
+  static 100 frames: peak 103312 KB  rc=0  built=1 series=1 points=4000 markers=4
+  static 300 frames: peak 103432 KB  rc=0  built=1 series=1 points=4000 markers=4
+  static growth over the frame sweep: 80 KB (limit 25600 KB)
+  toggle 30 frames: peak 102820 KB  rc=0  built=1 series=1 points=4000 markers=4
+  toggle 100 frames: peak 102640 KB  rc=0  built=1 series=1 points=4000 markers=4
+  toggle 300 frames: peak 103008 KB  rc=0  built=1 series=1 points=4000 markers=4
+  toggle growth over the frame sweep: 188 KB (limit 25600 KB)
+PASS: peak RSS under 204800 KB and flat in frame count, in both the steady-state and the toggle-every-frame shape
+--- planted fault 1: the bifurcation tick keeps its frame's points ---
+PASS: planted fault 'framepts' is caught (per-frame retention, every structural counter still correct)
+--- planted fault 2: the build-once sweep guard removed ---
+PASS: planted fault 'guard' is caught (every view switch rebuilds the sweep)
+PASS: memory gate green, both planted faults caught

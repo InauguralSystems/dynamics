@@ -1,0 +1,1 @@
+- Wheel zoom now anchors on the wheel event's own pointer position, including the first wheel before mouse motion (#27).

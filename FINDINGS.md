@@ -201,7 +201,7 @@ onto the same palette entries the phase-portrait canvas reads, so chrome and
 data surface are themed from the one module — verified in real pixels by the
 committed screenshot.
 
-## F-DYN-11 — lib/ui gap: the wheel event carries no cursor position
+## F-DYN-11 — lib/ui gap: the wheel event carries no cursor position → upstream EigenScript #822 (CLOSED upstream)
 
 `ev.x` / `ev.y` on a `wheel` event are the scroll **deltas** (#569), and the
 event dict carries nothing else positional — `src/ext_gfx.c` never puts the
@@ -215,6 +215,11 @@ and is wrong for any wheel that arrives before the first motion event
 Wants either the pointer position on the wheel event dict (SDL has it at
 event time) or a public `ui.pointer of null`. For
 `eigenscript-ui-toolkit-engineer`.
+
+**Resolved upstream — EigenScript#822 / PR #839.** Wheel events now carry
+the pointer as `ev.mx` / `ev.my`. The orbit lab prefers those native event
+coordinates and retains its hover shadow only for synthesized events that omit
+them.
 
 ## F-DYN-12 — lib/ui ergonomics: `canvas` does not clip its own `on_paint`
 

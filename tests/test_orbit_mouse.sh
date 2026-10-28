@@ -8,7 +8,7 @@
 # Pause freezes advancement, drag pans, the wheel zooms, and `r` restores
 # the view exactly.
 #
-# The checker is validated by three planted faults (pan, pause, mode):
+# The checker is validated by four planted faults (wheelptr, pan, pause, mode):
 # each MUST fail its named assertion, or a green run means nothing.
 #
 # Exits 2 (= failure in CI, skip locally) when the runtime has no gfx
@@ -67,21 +67,22 @@ UNIQUE_PASSES=$(grep '^PASS ' "$TMP/clean.log" | sort -u | wc -l) || {
     exit 1
 }
 if [ "$ORACLE_RC" -ne 0 ] ||
-   [ "$(grep -c '^PASS ' "$TMP/clean.log" || true)" -ne 16 ] ||
+   [ "$(grep -c '^PASS ' "$TMP/clean.log" || true)" -ne 17 ] ||
    grep -q '^FAIL \|^ERROR \|^DEADLINE ' "$TMP/clean.log" ||
    [ "$(grep -c '^all mouse + render-decode checks passed$' "$TMP/clean.log" || true)" -ne 1 ] ||
-   [ "$UNIQUE_PASSES" -ne 16 ]; then
+   [ "$UNIQUE_PASSES" -ne 17 ]; then
     echo "FAIL: the orbit-lab controls did not respond as specified"
     exit 1
 fi
 
-for fault in pause pan mode; do
+for fault in wheelptr pause pan mode; do
     echo "--- planted fault: $fault ---"
     run_oracle "$TMP/fault_$fault.log" --fault "$fault" --stop-on-fail
     case "$fault" in
-        pause) killed='pause: advancement freezes'; passes=3 ;;
-        pan) killed='drag: panning redraws'; passes=5 ;;
-        mode) killed='mode: the control column reads'; passes=11 ;;
+        wheelptr) killed='first wheel: event pointer anchors zoom before any mouse motion'; passes=0 ;;
+        pause) killed='pause: advancement freezes'; passes=4 ;;
+        pan) killed='drag: panning redraws'; passes=6 ;;
+        mode) killed='mode: the control column reads'; passes=12 ;;
     esac
     if [ "$ORACLE_RC" -ne 1 ] ||
        [ "$(grep -c '^PASS ' "$TMP/fault_$fault.log" || true)" -ne "$passes" ] ||
@@ -95,4 +96,4 @@ for fault in pause pan mode; do
     echo "PASS: planted fault '$fault' is caught by the oracle"
 done
 
-echo "PASS: mouse + render-decode oracle (16 checks), and all three planted faults caught"
+echo "PASS: mouse + render-decode oracle (17 checks), and all four planted faults caught"

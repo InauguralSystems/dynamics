@@ -46,7 +46,7 @@ jobs:
         run: python3 tests/lienard_55.py item5 --manifest prereg/55/manifest.json 2>&1 | tee item5.log
       - name: Upload complete logs
         if: always()
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@v7
         with:
           name: lienard55-complete-logs
           path: |

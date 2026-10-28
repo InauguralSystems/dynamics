@@ -1,0 +1,4 @@
+control=instance_a direction=forward corrected=91 frozen=117
+control=instance_a direction=reverse corrected=75 frozen=75
+control=van_der_pol direction=forward corrected=117 frozen=117
+control=van_der_pol direction=reverse corrected=0 frozen=35

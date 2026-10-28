@@ -1,0 +1,5 @@
+control,direction,corrected_oracle_settled,frozen_oracle_settled
+instance_a,forward,91,117
+instance_a,reverse,75,75
+van_der_pol,forward,117,117
+van_der_pol,reverse,0,35

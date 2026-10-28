@@ -1,0 +1,6 @@
+PASS: Family-B row 0 x0=0.25 forward is not successor-settled
+PASS: Instance A x0=0.20 forward is not successor-settled
+PASS: successor table sha256=abfb842d1c17bb400ce6f0caca1a1ec72cc44662c77f4f522f09d3b914a65c93
+PASS: disabled origin test reproduces frozen Family-B table byte-for-byte
+PASS: positive-control corrected=91/75/117/0 frozen=117/75/117/35
+PASS: cycle-settled control estimates equal all three oracles within 1e-9

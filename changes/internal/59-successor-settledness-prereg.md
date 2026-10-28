@@ -1,0 +1,1 @@
+- Pre-register origin-decay-aware oracle settledness and denominators for the issue 55 successor (#59).

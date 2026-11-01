@@ -13,9 +13,10 @@ echo "$OUT"
 echo "$OUT" | grep -q "DONE"            || { echo "FAIL: physics.eigs did not finish"; exit 1; }
 echo "$OUT" | grep -q "DIVERGES"        || { echo "FAIL: no divergence detected for zeta<0"; exit 1; }
 echo "$OUT" | grep -q "x OSCILLATES"    || { echo "FAIL: no oscillation detected for underdamped zeta"; exit 1; }
-# critical/overdamped rows must NOT oscillate: the last two sweep rows read "settles"
-SETTLES=$(echo "$OUT" | grep -c "settles" || true)
-[ "$SETTLES" -ge 1 ] || { echo "FAIL: no monotonic-settle row for zeta>=1"; exit 1; }
+# Check each zeta row on its own: the critical/overdamped rows (zeta>=1) must
+# read exactly "settles" with x:osc unset. Counting "settles" anywhere was
+# satisfied by the underdamped rows' "x OSCILLATES, energy settles".
+printf '%s\n' "$OUT" | python3 tests/check_physics_sweep.py
 
 echo "PASS: physics zeta-sweep produces the expected regime spectrum"
 

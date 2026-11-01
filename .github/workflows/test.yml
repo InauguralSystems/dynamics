@@ -28,6 +28,7 @@ jobs:
             EIGENSCRIPT=eigenscript bash tests/test_lint.sh
             EIGENSCRIPT=eigenscript bash tests/test_smoke.sh
             EIGENSCRIPT=eigenscript bash tests/test_lab.sh
+            EIGENSCRIPT=eigenscript bash tests/test_physics_sweep_plants.sh
             EIGENSCRIPT=eigenscript bash tests/test_orbit_hist.sh
             EIGENSCRIPT=eigenscript bash tests/test_bifurcation.sh
             EIGENSCRIPT=eigenscript bash tests/test_orbit_oracle.sh

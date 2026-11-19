@@ -109,13 +109,19 @@ define frame_velocity(zeta) as:
     x is state[0]
     return (x - (prev of x)) / (SUB * DT)
 
+# A sweep point is a damping ratio, a double. Its row label is what a person
+# reads: a whole value is shown without a fraction (zeta = 1, not 1.0).
+define zeta_label(z) as:
+    if z == (floor of z):
+        return str of (floor of z)
+    return str of z
+
 # ---- demo ----
 print of "=== damped-oscillator zeta-sweep: observer regime spectrum ==="
 print of "observe ENERGY (Lyapunov) vs DISPLACEMENT (oscillation); flags = regime visited"
 print of ""
 print of "  zeta     | E:osc conv div grew | x:osc conv div | reading"
-# Integral sweep points are whole-number labels, so keep them as integers.
-for z in [-0.05, 0, 0.1, 0.4, 1, 2]:
+for z in [-0.05, 0.0, 0.1, 0.4, 1.0, 2.0]:
     p is profile of [z, 64]
     reading is "settles"
     if p[6] == 1:
@@ -124,7 +130,7 @@ for z in [-0.05, 0, 0.1, 0.4, 1, 2]:
         reading is "x OSCILLATES, energy settles"
     e_line is f"E:{yn of p[0]} {yn of p[1]} {yn of p[2]} {yn of p[6]}"
     x_line is f"x:{yn of p[3]} {yn of p[4]} {yn of p[5]}"
-    print of f"  {z}\t| {e_line}     | {x_line}      | {reading}"
+    print of f"  {zeta_label of z}\t| {e_line}     | {x_line}      | {reading}"
 
 print of ""
 print of "the gem is the zeta=0 row: energy conserved -> never converges, while x"

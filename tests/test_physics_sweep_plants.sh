@@ -53,8 +53,8 @@ plant x-osc-false-positive \
     "zeta=1 reads 'x OSCILLATES, energy settles', expected 'settles'"
 # The overdamped row is dropped from the sweep.
 plant overdamped-row-dropped \
-    'for z in [-0.05, 0, 0.1, 0.4, 1, 2]:' \
-    'for z in [-0.05, 0, 0.1, 0.4, 1]:' \
+    'for z in [-0.05, 0.0, 0.1, 0.4, 1.0, 2.0]:' \
+    'for z in [-0.05, 0.0, 0.1, 0.4, 1.0]:' \
     "expected zeta rows ['-0.05', '0', '0.1', '0.4', '1', '2'], got ['-0.05', '0', '0.1', '0.4', '1']"
 # The printed x:osc flag is not the one the reading was derived from.
 plant x-flag-column-desync \

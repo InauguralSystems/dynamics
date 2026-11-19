@@ -114,7 +114,8 @@ print of "=== damped-oscillator zeta-sweep: observer regime spectrum ==="
 print of "observe ENERGY (Lyapunov) vs DISPLACEMENT (oscillation); flags = regime visited"
 print of ""
 print of "  zeta     | E:osc conv div grew | x:osc conv div | reading"
-for z in [-0.05, 0.0, 0.1, 0.4, 1.0, 2.0]:
+# Integral sweep points are whole-number labels, so keep them as integers.
+for z in [-0.05, 0, 0.1, 0.4, 1, 2]:
     p is profile of [z, 64]
     reading is "settles"
     if p[6] == 1:

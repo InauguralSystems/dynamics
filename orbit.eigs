@@ -251,9 +251,15 @@ _view is {"cx": 0.0, "cy": 0.0, "half": RANGE}
 _drag is {"active": 0, "mx": 0, "my": 0, "cx": 0.0, "cy": 0.0}
 _ptr is {"x": CANVAS_X + (CANVAS_W / 2), "y": CANVAS_Y + (CANVAS_H / 2)}
 
+define _display_hundredths(n) as:
+    local clipped is (floor of (n * 100.0)) / 100.0
+    if clipped == (floor of clipped):
+        return floor of clipped
+    return clipped
+
 define _view_label_text() as:
     local z is RANGE / _view.half
-    return f"zoom x{(floor of (z * 100.0)) / 100.0}"
+    return f"zoom x{_display_hundredths of z}"
 
 define _sync_view_label() as:
     if _app.lbl_v != null:
@@ -507,7 +513,7 @@ define reset_current_view() as:
 
 define _zeta_label_text() as:
     local z is _app.sim.zeta
-    return f"zeta = {(floor of (z * 100.0)) / 100.0}"
+    return f"zeta = {_display_hundredths of z}"
 
 define _on_zeta_change(w) as:
     _app.sim.zeta is w.value

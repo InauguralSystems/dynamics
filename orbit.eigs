@@ -522,7 +522,7 @@ define _on_reset(w) as:  # lint: allow W002 -- lib/ui's on_click signature
     return reset_current_view of []
 
 define _on_mode(w) as:
-    if w.value == 1:
+    if w.value:
         return set_mode of "bif"
     return set_mode of "orbit"
 

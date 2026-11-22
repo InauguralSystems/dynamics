@@ -77,6 +77,8 @@ SLIDER = (468, 100, 192)                    # x, y (centre), width
 # (8, 60) — a slot the phase-portrait column leaves blank, so decoding it
 # reads the CURRENT view rather than a label that exists in both.
 MODE_BTN = (564, 437)
+# The Pause toggle at panel-relative (8, 120, 192, 26), same panel origin.
+PAUSE_BTN = (564, 145)
 BIF_LABEL_XY = (468, 72)
 CHANGED_MIN = 100                           # pixels: a redraw of the whole plot
 # Advancement is measured against a noise floor the run itself pins: the
@@ -383,8 +385,8 @@ FAULTS = {
     "pause": ("    if _app.paused == 0:\n", "    if _app.paused == 0 or 1 == 1:\n"),
     # the view selector's handler fires but switches nothing — the class
     # of bug where "a handler ran" is mistaken for "the UI changed".
-    "mode": ('    if w.value == 1:\n        return set_mode of "bif"\n',
-             '    if w.value == 1:\n        return null\n'),
+    "mode": ('    if w.value:\n        return set_mode of "bif"\n',
+             '    if w.value:\n        return null\n'),
     # Recreate F-DYN-11: ignore the wheel event's pointer and use only
     # the hover shadow, which is still at its centre default.
     "wheelptr": ("    if ev.mx != null:\n        zx is ev.mx\n",
@@ -581,6 +583,18 @@ def main():
                 raise RuntimeError("pause state changed again before capture")
             return settled
 
+        def pause_btn_to(value):
+            # The same state change through the Pause button instead of the
+            # space key: the button's handler reads the toolkit flag
+            # (EigenScript#1653), which the space key never touches.
+            before = wait_state("before-pause-btn", lambda s: True)
+            if before["paused"] == value:
+                raise RuntimeError("unexpected pause state before the button: %r" % before)
+            click_at(*PAUSE_BTN)
+            ack = wait_state("pause-btn-%d" % value,
+                             lambda s: s["ticks"] > before["ticks"] and s["paused"] == value)
+            return ticks_after("pause-btn-rendered", ack)
+
         cx, cy = CANVAS[0] + CANVAS[2] // 2, CANVAS[1] + CANVAS[3] // 2
 
         # 1. Wheel before any motion. The world coordinate under the native
@@ -735,6 +749,21 @@ def main():
         d = region_diff(before_toggle, back, CANVAS)
         check(d == 0,
               "mode: the phase portrait comes back pixel-for-pixel (%d px differ)" % d)
+
+        # 10. the Pause BUTTON, last: a click gives the button the keyboard
+        # focus, so it must come after every key-driven step. Unpause by the
+        # button (the plot advances again), then pause by it.
+        resumed = pause_btn_to(0)
+        run_e = snapshot("btn-unpause-before")
+        run_f, advanced = visible("btn-unpause", lambda img, s:
+                                  s["frame"] > resumed["frame"] and
+                                  region_diff(run_e, img, CANVAS) >= ADVANCE_MIN, resumed)
+        d = region_diff(run_e, run_f, CANVAS)
+        check(d >= ADVANCE_MIN and advanced["frame"] > resumed["frame"],
+              "pause button: a click resumes the simulation (%d px differ)" % d)
+        paused = pause_btn_to(1)
+        check(paused["paused"] == 1,
+              "pause button: a second click pauses it again")
 
     except Stop:
         print("(stopping at the first failure)")

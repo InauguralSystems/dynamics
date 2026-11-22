@@ -67,10 +67,10 @@ UNIQUE_PASSES=$(grep '^PASS ' "$TMP/clean.log" | sort -u | wc -l) || {
     exit 1
 }
 if [ "$ORACLE_RC" -ne 0 ] ||
-   [ "$(grep -c '^PASS ' "$TMP/clean.log" || true)" -ne 17 ] ||
+   [ "$(grep -c '^PASS ' "$TMP/clean.log" || true)" -ne 19 ] ||
    grep -q '^FAIL \|^ERROR \|^DEADLINE ' "$TMP/clean.log" ||
    [ "$(grep -c '^all mouse + render-decode checks passed$' "$TMP/clean.log" || true)" -ne 1 ] ||
-   [ "$UNIQUE_PASSES" -ne 17 ]; then
+   [ "$UNIQUE_PASSES" -ne 19 ]; then
     echo "FAIL: the orbit-lab controls did not respond as specified"
     exit 1
 fi
@@ -96,4 +96,4 @@ for fault in wheelptr pause pan mode; do
     echo "PASS: planted fault '$fault' is caught by the oracle"
 done
 
-echo "PASS: mouse + render-decode oracle (17 checks), and all four planted faults caught"
+echo "PASS: mouse + render-decode oracle (19 checks), and all four planted faults caught"

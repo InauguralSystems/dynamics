@@ -515,7 +515,10 @@ define _on_zeta_change(w) as:
     return null
 
 define _on_pause(w) as:
-    _app.paused is w.value
+    # app state stays 1/0 whatever the toolkit's flag type (EigenScript#1653)
+    _app.paused is 0
+    if w.value:
+        _app.paused is 1
     return null
 
 define _on_reset(w) as:  # lint: allow W002 -- lib/ui's on_click signature

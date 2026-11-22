@@ -1,0 +1,1 @@
+- Keep integral damping-ratio and zoom display values as whole-number labels on the next EigenScript number model.
